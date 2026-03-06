@@ -8558,11 +8558,15 @@ JSON.stringify(weeklyStats)
 }
 // Record workout completion
 function recordWorkout(type){
-const key = type.toLowerCase();
-if(weeklyStats[key] !== undefined){
-weeklyStats[key]++;
-}
-saveWeeklyStats();
+  let key = type.toLowerCase();
+  if(key.includes("pull")) key = "pull";
+  else if(key.includes("push")) key = "push";
+  else if(key.includes("leg")) key = "legs";
+  else if(key.includes("arm")) key = "arms";
+  if(weeklyStats[key] !== undefined){
+    weeklyStats[key]++;
+  }
+  saveWeeklyStats();
 }
 
 // Last workout memory
