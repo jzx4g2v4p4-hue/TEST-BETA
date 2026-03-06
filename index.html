@@ -453,6 +453,17 @@
 // ═══════════════════════════════════════════════════════════
 // FIGHTER'S POWER SYSTEM - 4 Equipment Setups
 // Mon=Pull, Tue=Push, Wed=Legs, Thu=Arms+Core, Fri=Optional Pull
+  function generateWorkout(group){
+  const lib = EXERCISE_LIBRARY[group];
+  if(!lib) return [];
+  const shuffled = [...lib].sort(()=>Math.random()-0.5);
+  const selected = shuffled.slice(0,6);
+  return selected.map(ex=>({
+    n: ex.name,
+    s: ex.sets,
+    r: ex.reps
+  }));
+}
 const EXERCISE_LIBRARY = {
 chest: [
 {name:"Push-Ups",sets:"3-5",reps:"10-20",notes:"Standard chest press from plank position",difficulty:"beginner",equipment:"bodyweight"},
