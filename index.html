@@ -464,6 +464,13 @@
     r: ex.reps
   }));
 }
+let workoutMode = "preset";
+
+function setWorkoutMode(mode){
+workoutMode = mode;
+renderTraining();
+}
+  
 const EXERCISE_LIBRARY = {
 chest: [
 {name:"Push-Ups",sets:"3-5",reps:"10-20",notes:"Standard chest press from plank position",difficulty:"beginner",equipment:"bodyweight"},
@@ -1870,10 +1877,11 @@ Make it up today?
 </div>
 `
 }
+${(()=>{
 const recommendation = getWorkoutRecommendation()
-html += `
+return `
 <div style="
-margin:10px 0 14px;
+margin:10px 0 8px;
 padding:14px;
 border-radius:12px;
 background:linear-gradient(135deg,#00ff88,#00d4ff);
@@ -1882,11 +1890,16 @@ font-weight:bold;
 text-align:center;
 font-size:16px;
 box-shadow:0 0 12px rgba(0,212,255,0.35);">
-🔥 YOU SEXY MOTHERFUCKING BEAST WHAT ARE WE HITTING TODAY?<br>
+🔥 WHAT ARE WE HITTING TODAY?<br>
 ${recommendation}
 </div>
+
+<div style="display:flex;gap:8px;margin-bottom:14px;">
+<button class="phase-btn" onclick="setWorkoutMode('preset')">PRESET</button>
+<button class="phase-btn" onclick="setWorkoutMode('smart')">SMART</button>
+<button class="phase-btn" onclick="setWorkoutMode('build')">BUILD</button>
+</div>
 `
-return html
 })()}
     
       <div class="section-lbl">TODAY'S WORKOUT</div>
