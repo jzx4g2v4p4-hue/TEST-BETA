@@ -8520,36 +8520,39 @@ const groups = ["pull","push","legs","arms"];
 return groups.filter(g => g !== lastWorkout);
 }
 
+function getYesterdayWorkout(){
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate()-1)
+  const y = yesterday.getFullYear()
+  const m = String(yesterday.getMonth()+1).padStart(2,'0')
+  const d = String(yesterday.getDate()).padStart(2,'0')
+  const key = y + '-' + m + '-' + d
+  const dayData = DB.days && DB.days[key]
+  if(!dayData || !dayData.type) return null
+  return dayData.type.toLowerCase()
+}
+  
 // Smart recommendation
 function getSmartWorkout(){
-
   const safe = getRecoverySafeGroups()
-
   if(!safe || safe.length===0) return 'rest'
-
   const yesterday = getYesterdayWorkout()
-
   const avoid = {
     pull:['pull','arms'],
     push:['push','arms'],
     legs:['legs'],
     arms:['arms']
   }
-
   let filtered = safe
-
   if(yesterday && avoid[yesterday]){
     filtered = safe.filter(g=>!avoid[yesterday].includes(g))
   }
-
   if(filtered.length===0){
     filtered = safe
   }
-
   const sorted = filtered.sort((a,b)=>weeklyStats[a]-weeklyStats[b])
-
   return sorted[0]
-
 }
 
 // Convert recommendation to display text
