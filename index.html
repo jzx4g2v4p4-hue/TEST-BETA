@@ -8438,6 +8438,97 @@ document.addEventListener('visibilitychange', () => {
 });
 keepScreenAwake();
 // ------------------------------
+  //////////////////////////////////////////////////////////////////
+// SMART TRAINING ENGINE
+//////////////////////////////////////////////////////////////////
+
+// Weekly muscle tracking
+let weeklyStats = JSON.parse(
+localStorage.getItem("weeklyStats")
+) || {
+pull:0,
+push:0,
+legs:0,
+arms:0
+};
+
+function saveWeeklyStats(){
+localStorage.setItem(
+"weeklyStats",
+JSON.stringify(weeklyStats)
+);
+}
+
+// Record workout completion
+function recordWorkout(type){
+
+const key = type.toLowerCase();
+
+if(weeklyStats[key] !== undefined){
+weeklyStats[key]++;
+}
+
+saveWeeklyStats();
+}
+
+// Last workout memory
+let lastWorkout = localStorage.getItem("lastWorkout") || null;
+
+function saveLastWorkout(type){
+
+lastWorkout = type;
+
+localStorage.setItem(
+"lastWorkout",
+type
+);
+}
+
+// Balanced workout suggestion
+function getBalancedWorkout(){
+
+const groups = Object.entries(weeklyStats);
+
+groups.sort((a,b)=>a[1]-b[1]);
+
+return groups[0][0];
+}
+
+// Avoid repeating same muscle group
+function getRecoverySafeGroups(){
+
+const groups = ["pull","push","legs","arms"];
+
+return groups.filter(g => g !== lastWorkout);
+}
+
+// Smart recommendation
+function getSmartWorkout(){
+
+const safe = getRecoverySafeGroups();
+
+const sorted = safe.sort(
+(a,b)=>weeklyStats[a]-weeklyStats[b]
+);
+
+return sorted[0];
+}
+
+// Convert recommendation to display text
+function getWorkoutRecommendation(){
+
+const group = getSmartWorkout()
+
+const names = {
+pull:"PULL DAY",
+push:"PUSH DAY",
+legs:"LEG DAY",
+arms:"ARMS & CORE"
+}
+
+return names[group] || "WORKOUT"
+}
+
 </script>
 </body>
 </html>
