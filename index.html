@@ -1672,6 +1672,24 @@ function renderWorkoutTab(today,dd){
       })()}
     </div>
     <div class="ex-section" id="ex-section-main">
+    ${(()=>{
+      const recommendation = getWorkoutRecommendation()
+      return `
+      <div style="
+      margin:10px 0 14px;
+      padding:14px;
+      border-radius:12px;
+      background:linear-gradient(135deg,#00ff88,#00d4ff);
+      color:#000;
+      font-weight:bold;
+      text-align:center;
+      font-size:16px;
+      box-shadow:0 0 12px rgba(0,212,255,0.35);">
+  🔥 WHAT ARE WE HITTING TODAY?<br>
+  ${recommendation}
+  </div>`
+})()}
+    
       <div class="section-lbl">TODAY'S WORKOUT</div>
       ${(()=>{
         var allExercises = day.exercises.map(function(ex,i){return {ex:ex,i:i};});
