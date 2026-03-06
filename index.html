@@ -1706,8 +1706,29 @@ WEEKLY BALANCE
 })()}
 
 ${(()=>{
+let html = ""
+
+const missed = getMissedWorkout()
+
+if(missed){
+html += `
+<div style="
+margin:0 0 10px;
+padding:12px;
+border-radius:10px;
+background:#2a1a00;
+border:1px solid #ffcc00;
+color:#ffcc00;
+font-weight:bold;
+text-align:center;
+font-size:13px;">
+⚠️ You missed ${missed} yesterday.<br>
+Make it up today?
+</div>
+`
+}
 const recommendation = getWorkoutRecommendation()
-return `
+html += `
 <div style="
 margin:10px 0 14px;
 padding:14px;
@@ -1718,10 +1739,11 @@ font-weight:bold;
 text-align:center;
 font-size:16px;
 box-shadow:0 0 12px rgba(0,212,255,0.35);">
-🔥 WHAT ARE WE HITTING TODAY?<br>
+🔥 YOU SEXY MOTHERFUCKING BEAST WHAT ARE WE HITTING TODAY?<br>
 ${recommendation}
 </div>
 `
+return html
 })()}
     
       <div class="section-lbl">TODAY'S WORKOUT</div>
@@ -8619,6 +8641,15 @@ localStorage.setItem("weeklyStats", JSON.stringify(resetStats))
 localStorage.setItem("weeklyResetDate", today)
 }
 }
+}
+function getMissedWorkout(){
+const yesterday = getYesterdayWorkout()
+if(!yesterday) return null
+const stats = JSON.parse(localStorage.getItem("weeklyStats")) || {}
+if(stats[yesterday] && stats[yesterday] > 0){
+return null
+}
+return yesterday.toUpperCase()
 }
   checkWeeklyReset();
 </script>
