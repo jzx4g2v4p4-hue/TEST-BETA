@@ -1861,8 +1861,13 @@ legs:0,
 arms:0
 }
 
-if(!stats[day.type]) stats[day.type] = 0
-stats[day.type]++
+let key = day.type.toLowerCase()
+if(key.includes("pull")) key = "pull"
+else if(key.includes("push")) key = "push"
+else if(key.includes("leg")) key = "legs"
+else if(key.includes("arm")) key = "arms"
+if(!stats[key]) stats[key] = 0
+stats[key]++
 
 localStorage.setItem("weeklyStats", JSON.stringify(stats))
 
