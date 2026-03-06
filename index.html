@@ -8523,13 +8523,33 @@ return groups.filter(g => g !== lastWorkout);
 // Smart recommendation
 function getSmartWorkout(){
 
-const safe = getRecoverySafeGroups();
+  const safe = getRecoverySafeGroups()
 
-const sorted = safe.sort(
-(a,b)=>weeklyStats[a]-weeklyStats[b]
-);
+  if(!safe || safe.length===0) return 'rest'
 
-return sorted[0];
+  const yesterday = getYesterdayWorkout()
+
+  const avoid = {
+    pull:['pull','arms'],
+    push:['push','arms'],
+    legs:['legs'],
+    arms:['arms']
+  }
+
+  let filtered = safe
+
+  if(yesterday && avoid[yesterday]){
+    filtered = safe.filter(g=>!avoid[yesterday].includes(g))
+  }
+
+  if(filtered.length===0){
+    filtered = safe
+  }
+
+  const sorted = filtered.sort((a,b)=>weeklyStats[a]-weeklyStats[b])
+
+  return sorted[0]
+
 }
 
 // Convert recommendation to display text
