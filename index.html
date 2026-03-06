@@ -453,6 +453,144 @@
 // ═══════════════════════════════════════════════════════════
 // FIGHTER'S POWER SYSTEM - 4 Equipment Setups
 // Mon=Pull, Tue=Push, Wed=Legs, Thu=Arms+Core, Fri=Optional Pull
+  const EXERCISE_LIBRARY = {
+
+const EXERCISE_LIBRARY = {
+
+chest: [
+
+{name:"Push-Ups",sets:"3-5",reps:"10-20",notes:"Standard chest press from plank position",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Incline Push-Ups",sets:"3-5",reps:"10-20",notes:"Hands elevated to reduce difficulty",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Decline Push-Ups",sets:"3-5",reps:"8-15",notes:"Feet elevated to emphasize upper chest",difficulty:"intermediate",equipment:"bodyweight"},
+{name:"Diamond Push-Ups",sets:"3-4",reps:"8-15",notes:"Targets triceps and inner chest",difficulty:"intermediate",equipment:"bodyweight"},
+{name:"Wide Push-Ups",sets:"3-4",reps:"10-20",notes:"Emphasizes outer chest",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Archer Push-Ups",sets:"3-4",reps:"6-10",notes:"Single-arm loading variation",difficulty:"advanced",equipment:"bodyweight"},
+{name:"Clap Push-Ups",sets:"3-4",reps:"5-10",notes:"Explosive power movement",difficulty:"advanced",equipment:"bodyweight"},
+{name:"Ring Push-Ups",sets:"3-4",reps:"8-15",notes:"Instability increases chest activation",difficulty:"intermediate",equipment:"rings"},
+{name:"Barbell Bench Press",sets:"4-5",reps:"5-8",notes:"Primary chest strength movement",difficulty:"intermediate",equipment:"barbell"},
+{name:"Dumbbell Bench Press",sets:"4",reps:"8-12",notes:"Improves chest symmetry",difficulty:"intermediate",equipment:"dumbbells"},
+{name:"Incline Bench Press",sets:"4",reps:"6-10",notes:"Targets upper chest",difficulty:"intermediate",equipment:"barbell"},
+{name:"Decline Bench Press",sets:"4",reps:"6-10",notes:"Emphasizes lower chest",difficulty:"intermediate",equipment:"barbell"},
+{name:"Cable Chest Fly",sets:"3-4",reps:"10-15",notes:"Constant chest tension",difficulty:"beginner",equipment:"cable"},
+{name:"Dumbbell Chest Fly",sets:"3-4",reps:"10-15",notes:"Stretch focused chest isolation",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Chest Dips",sets:"3-4",reps:"8-12",notes:"Lean forward to emphasize chest",difficulty:"intermediate",equipment:"parallel bars"}
+
+],
+
+back: [
+
+{name:"Pull-Ups",sets:"4-5",reps:"max",notes:"Full stretch at bottom",difficulty:"intermediate",equipment:"pullup bar"},
+{name:"Chin-Ups",sets:"4",reps:"max",notes:"More biceps involvement",difficulty:"intermediate",equipment:"pullup bar"},
+{name:"Wide Grip Pull-Ups",sets:"4",reps:"max",notes:"Targets upper lats",difficulty:"advanced",equipment:"pullup bar"},
+{name:"Inverted Rows",sets:"4",reps:"12-15",notes:"Horizontal pulling movement",difficulty:"beginner",equipment:"bar"},
+{name:"Ring Rows",sets:"4",reps:"12-15",notes:"Instability row variation",difficulty:"beginner",equipment:"rings"},
+{name:"Barbell Bent Rows",sets:"4",reps:"6-10",notes:"Builds mid-back thickness",difficulty:"intermediate",equipment:"barbell"},
+{name:"Pendlay Rows",sets:"4",reps:"5-8",notes:"Explosive row from floor",difficulty:"advanced",equipment:"barbell"},
+{name:"Single Arm Dumbbell Row",sets:"4",reps:"8-12",notes:"Unilateral back strength",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Lat Pulldown",sets:"4",reps:"8-12",notes:"Vertical pulling alternative",difficulty:"beginner",equipment:"machine"},
+{name:"Face Pulls",sets:"3-4",reps:"12-15",notes:"Rear delts and posture muscles",difficulty:"beginner",equipment:"cable"},
+{name:"Rear Delt Fly",sets:"3-4",reps:"12-15",notes:"Targets rear delts",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Deadlift",sets:"5",reps:"5",notes:"Total posterior chain strength",difficulty:"advanced",equipment:"barbell"}
+
+],
+
+shoulders: [
+
+{name:"Overhead Barbell Press",sets:"4",reps:"5-8",notes:"Primary shoulder strength lift",difficulty:"intermediate",equipment:"barbell"},
+{name:"Dumbbell Shoulder Press",sets:"4",reps:"8-12",notes:"Improves shoulder symmetry",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Arnold Press",sets:"3-4",reps:"8-12",notes:"Rotational shoulder press",difficulty:"intermediate",equipment:"dumbbells"},
+{name:"Push Press",sets:"4",reps:"5",notes:"Explosive overhead press",difficulty:"advanced",equipment:"barbell"},
+{name:"Handstand Push-Ups",sets:"4",reps:"max",notes:"Bodyweight shoulder strength",difficulty:"advanced",equipment:"bodyweight"},
+{name:"Pike Push-Ups",sets:"3-4",reps:"10-15",notes:"Shoulder focused push-up",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Dumbbell Lateral Raise",sets:"3-4",reps:"12-15",notes:"Side delts isolation",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Front Raises",sets:"3",reps:"12-15",notes:"Anterior delts isolation",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Rear Delt Fly",sets:"3",reps:"12-15",notes:"Rear shoulder activation",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Upright Rows",sets:"3-4",reps:"8-12",notes:"Shoulders and traps",difficulty:"intermediate",equipment:"barbell"}
+
+],
+
+arms: [
+
+{name:"Barbell Curls",sets:"4",reps:"8-10",notes:"Heavy biceps builder",difficulty:"intermediate",equipment:"barbell"},
+{name:"Dumbbell Curls",sets:"4",reps:"10-12",notes:"Standard biceps curl",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Hammer Curls",sets:"3-4",reps:"10-12",notes:"Targets brachialis",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Preacher Curls",sets:"3",reps:"10-12",notes:"Strict biceps isolation",difficulty:"intermediate",equipment:"machine"},
+{name:"Cable Curls",sets:"3",reps:"12-15",notes:"Constant tension biceps",difficulty:"beginner",equipment:"cable"},
+{name:"Close Grip Push-Ups",sets:"3-4",reps:"10-20",notes:"Bodyweight triceps",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Bench Dips",sets:"3",reps:"12-20",notes:"Bodyweight triceps exercise",difficulty:"beginner",equipment:"bench"},
+{name:"Skull Crushers",sets:"4",reps:"8-12",notes:"Triceps isolation lift",difficulty:"intermediate",equipment:"barbell"},
+{name:"Tricep Pushdowns",sets:"3-4",reps:"12-15",notes:"Cable triceps exercise",difficulty:"beginner",equipment:"cable"},
+{name:"Overhead Triceps Extensions",sets:"3-4",reps:"10-12",notes:"Long head triceps focus",difficulty:"beginner",equipment:"dumbbells"}
+
+],
+
+legs: [
+
+{name:"Back Squat",sets:"5",reps:"5",notes:"Primary lower body strength lift",difficulty:"intermediate",equipment:"barbell"},
+{name:"Front Squat",sets:"4",reps:"6-8",notes:"More quad emphasis",difficulty:"intermediate",equipment:"barbell"},
+{name:"Goblet Squat",sets:"4",reps:"10-15",notes:"Beginner squat variation",difficulty:"beginner",equipment:"dumbbells"},
+{name:"Bulgarian Split Squat",sets:"3-4",reps:"10 each",notes:"Unilateral leg strength",difficulty:"intermediate",equipment:"dumbbells"},
+{name:"Walking Lunges",sets:"3",reps:"20 steps",notes:"Glutes and quads",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Romanian Deadlift",sets:"4",reps:"8-10",notes:"Hamstrings and glutes",difficulty:"intermediate",equipment:"barbell"},
+{name:"Hip Thrust",sets:"4",reps:"10-12",notes:"Glute strength exercise",difficulty:"intermediate",equipment:"barbell"},
+{name:"Jump Squats",sets:"3",reps:"12",notes:"Explosive lower body power",difficulty:"intermediate",equipment:"bodyweight"},
+{name:"Box Jumps",sets:"3",reps:"8",notes:"Explosive vertical power",difficulty:"intermediate",equipment:"box"},
+{name:"Calf Raises",sets:"4",reps:"15-20",notes:"Lower leg strength",difficulty:"beginner",equipment:"bodyweight"}
+
+],
+
+core: [
+
+{name:"Plank",sets:"3",reps:"45 sec",notes:"Core stability exercise",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Side Plank",sets:"3",reps:"30 sec",notes:"Oblique stability",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Hanging Leg Raises",sets:"3",reps:"10-15",notes:"Lower abs strength",difficulty:"intermediate",equipment:"pullup bar"},
+{name:"Russian Twists",sets:"3",reps:"20",notes:"Rotational core strength",difficulty:"beginner",equipment:"bodyweight"},
+{name:"V-Ups",sets:"3",reps:"15",notes:"Full abdominal contraction",difficulty:"intermediate",equipment:"bodyweight"},
+{name:"Ab Rollouts",sets:"3",reps:"10-12",notes:"Anti-extension core training",difficulty:"advanced",equipment:"ab wheel"},
+{name:"Mountain Climbers",sets:"3",reps:"30 sec",notes:"Dynamic core conditioning",difficulty:"beginner",equipment:"bodyweight"}
+
+],
+
+conditioning: [
+
+{name:"Jump Rope",sets:"5",reps:"1 min",notes:"Cardio and coordination",difficulty:"beginner",equipment:"rope"},
+{name:"Sprint Intervals",sets:"8",reps:"20 sec sprint",notes:"High intensity conditioning",difficulty:"advanced",equipment:"track"},
+{name:"Battle Ropes",sets:"5",reps:"30 sec",notes:"Upper body conditioning",difficulty:"intermediate",equipment:"battle ropes"},
+{name:"Sled Push",sets:"5",reps:"20 m",notes:"Leg power and conditioning",difficulty:"advanced",equipment:"sled"},
+{name:"Box Jumps",sets:"4",reps:"8",notes:"Explosive lower body",difficulty:"intermediate",equipment:"box"},
+{name:"Burpees",sets:"4",reps:"15",notes:"Full body conditioning",difficulty:"intermediate",equipment:"bodyweight"},
+{name:"Kettlebell Swings",sets:"4",reps:"20",notes:"Hip explosive conditioning",difficulty:"intermediate",equipment:"kettlebell"}
+
+],
+
+bjj: [
+
+{name:"Shrimping",sets:"3",reps:"20",notes:"Fundamental hip escape movement",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Technical Stand Ups",sets:"3",reps:"15",notes:"Base recovery movement",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Granby Rolls",sets:"3",reps:"10",notes:"Inversion escape drill",difficulty:"advanced",equipment:"bodyweight"},
+{name:"Sprawls",sets:"4",reps:"15",notes:"Takedown defense drill",difficulty:"intermediate",equipment:"bodyweight"},
+{name:"Shot Entries",sets:"4",reps:"10",notes:"Wrestling takedown entry practice",difficulty:"intermediate",equipment:"bodyweight"}
+
+],
+mobility: [
+{name:"World's Greatest Stretch",sets:"2",reps:"10 each side",notes:"Full body mobility flow",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Pigeon Stretch",sets:"2",reps:"45 sec each",notes:"Deep glute stretch",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Couch Stretch",sets:"2",reps:"60 sec each",notes:"Hip flexor mobility",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Deep Squat Hold",sets:"2",reps:"60 sec",notes:"Ankle and hip mobility",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Thoracic Rotations",sets:"2",reps:"15 each",notes:"Spine mobility",difficulty:"beginner",equipment:"bodyweight"}
+
+],
+posture: [
+{name:"Wall Angels",sets:"3",reps:"15",notes:"Shoulder posture correction",difficulty:"beginner",equipment:"wall"},
+{name:"Band Pull Aparts",sets:"3",reps:"20",notes:"Rear delts and posture",difficulty:"beginner",equipment:"band"},
+{name:"Face Pulls",sets:"3",reps:"15",notes:"Upper back posture muscles",difficulty:"beginner",equipment:"cable"},
+{name:"Chin Tucks",sets:"3",reps:"15",notes:"Neck posture correction",difficulty:"beginner",equipment:"bodyweight"},
+{name:"Scapular Pull Ups",sets:"3",reps:"10",notes:"Shoulder stability drill",difficulty:"intermediate",equipment:"pullup bar"}
+]
+
+};
+
+}
 const FIGHTERS = {
   gym: {
     label: "🏋️ FULL GYM",
