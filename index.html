@@ -1919,6 +1919,120 @@ function selectAIWorkout() {
   selectEquip('ai_random'); 
 }
 // ═══════════════════════════════════════════════════════════
+// AI GENERATOR LIBRARY
+// ═══════════════════════════════════════════════════════════
+const EXERCISE_LIBRARY = {
+  chest: [
+    {name:"Standard Push-Ups",sets:4,reps:"max",notes:"Perfect form foundation"},
+    {name:"Clap Push-Ups",sets:4,reps:"8",notes:"Explosive plyometric"},
+    {name:"Diamond Push-Ups",sets:4,reps:"15",notes:"Triceps focus"},
+    {name:"Incline DB Press",sets:4,reps:"8-12",notes:"Upper chest focus"},
+    {name:"DB Floor Press",sets:4,reps:"10",notes:"Heavy chest power"}
+  ],
+  back: [
+    {name:"Pull-Ups",sets:4,reps:"max",notes:"King of bodyweight pulling"},
+    {name:"Renegade Rows",sets:4,reps:"10 each",notes:"Core and back"},
+    {name:"Bent-Over DB Rows",sets:4,reps:"10",notes:"Heavy row"},
+    {name:"Superman Pulls",sets:4,reps:"20",notes:"Prone pulling"}
+  ],
+  shoulders: [
+    {name:"Pike Push-Ups",sets:4,reps:"12",notes:"Shoulder focus"},
+    {name:"DB Push Press",sets:4,reps:"8",notes:"Explosive overhead"},
+    {name:"Lateral Raises",sets:4,reps:"15",notes:"Side delt isolation"},
+    {name:"Reverse Flyes",sets:4,reps:"15",notes:"Rear delt isolation"}
+  ],
+  arms: [
+    {name:"Alternating DB Curls",sets:4,reps:"10 each",notes:"Heavy bicep"},
+    {name:"Hammer Curls",sets:4,reps:"12",notes:"Forearm power"},
+    {name:"Overhead Tricep Ext",sets:4,reps:"10",notes:"Full stretch"},
+    {name:"Chair Dips",sets:4,reps:"20",notes:"Compound tricep"}
+  ],
+  legs: [
+    {name:"Jump Squats",sets:4,reps:"20",notes:"Explosive power"},
+    {name:"Bulgarian Split Squats",sets:4,reps:"12 each",notes:"Unilateral power"},
+    {name:"Goblet Squats",sets:4,reps:"12",notes:"Primary squat"},
+    {name:"DB Hip Thrusts",sets:4,reps:"15",notes:"Maximum glute squeeze"},
+    {name:"Walking Lunges",sets:4,reps:"20 steps",notes:"Dynamic leg power"}
+  ],
+  core: [
+    {name:"Russian Twists",sets:4,reps:"30",notes:"Explosive rotational"},
+    {name:"Plank",sets:3,reps:"60 sec",notes:"Core stability"},
+    {name:"V-Ups",sets:4,reps:"20",notes:"Full ab contraction"},
+    {name:"Mountain Climbers",sets:3,reps:"40 sec",notes:"Dynamic core"}
+  ],
+  conditioning: [
+    {name:"Burpees",sets:3,reps:"15",notes:"Full body finisher"},
+    {name:"Shadowboxing Rounds",sets:3,reps:"3 min",notes:"Footwork and flow"},
+    {name:"High Knees",sets:3,reps:"45 sec",notes:"Max heart rate"},
+    {name:"Sprawl Drills",sets:3,reps:"10",notes:"Takedown defense reaction"}
+  ],
+  bjj: [
+    {name:"Hip Escape (Shrimping)",sets:3,reps:"20",notes:"Fundamental mat movement"},
+    {name:"Technical Stand-up",sets:3,reps:"10 each",notes:"Base recovery"},
+    {name:"Bridge and Roll",sets:3,reps:"15",notes:"Upa escape mechanic"},
+    {name:"Guard Retention Drill",sets:3,reps:"1 min",notes:"Leg pummeling"}
+  ],
+  flexibility: [
+    {name:"Couch Stretch",sets:2,reps:"60 sec each",notes:"Deep hip flexor release"},
+    {name:"Pancake Stretch",sets:3,reps:"45 sec",notes:"Seated wide straddle fold"},
+    {name:"Frog Stretch",sets:2,reps:"60 sec",notes:"Inner thigh and groin opening"},
+    {name:"Lizard Stretch",sets:2,reps:"45 sec each",notes:"Hip opener from lunge"},
+    {name:"Middle Split Progression",sets:3,reps:"30 sec",notes:"Isometric holds near max range"}
+  ],
+  mewing: [
+    {name:"Tongue Posture Hold",sets:5,reps:"1 min",notes:"Entire tongue pressed flat to roof of mouth"},
+    {name:"Chin Tucks",sets:3,reps:"15",notes:"Neck posture correction (double chin pull)"},
+    {name:"Neck Posture Alignment",sets:3,reps:"30 sec",notes:"Wall sit with back of head touching"},
+    {name:"Breathing Posture Drill",sets:3,reps:"10 breaths",notes:"Diaphragmatic breathing"}
+  ]
+};
+
+function generateAIWorkout(ad) {
+  let musclePools = [];
+  if (ad === 'MON' || ad === 'FRI') musclePools = [{lib: EXERCISE_LIBRARY.back, count: 3}, {lib: EXERCISE_LIBRARY.arms, count: 2}];
+  else if (ad === 'TUE') musclePools = [{lib: EXERCISE_LIBRARY.chest, count: 3}, {lib: EXERCISE_LIBRARY.shoulders, count: 2}];
+  else if (ad === 'WED') musclePools = [{lib: EXERCISE_LIBRARY.legs, count: 4}, {lib: EXERCISE_LIBRARY.core, count: 1}];
+  else if (ad === 'THU') musclePools = [{lib: EXERCISE_LIBRARY.arms, count: 3}, {lib: EXERCISE_LIBRARY.core, count: 2}];
+  else musclePools = [{lib: EXERCISE_LIBRARY.legs, count: 3}];
+
+  musclePools.push({lib: EXERCISE_LIBRARY.conditioning, count: 2});
+  musclePools.push({lib: EXERCISE_LIBRARY.bjj, count: 2});
+
+  let exercises = [];
+  musclePools.forEach(p => {
+    if(!p.lib) return;
+    let shuffled = [...p.lib].sort(() => 0.5 - Math.random());
+    let selected = shuffled.slice(0, p.count).map(ex => {
+      let sets = Math.floor(Math.random() * 2) + 3;
+      let repTargets = ["5-8 heavy", "10-12 strict", "15-20 burnout", "Max reps", "Drop set", "Explosive speed"];
+      let r = repTargets[Math.floor(Math.random() * repTargets.length)];
+      if (p.lib === EXERCISE_LIBRARY.conditioning || p.lib === EXERCISE_LIBRARY.bjj) {
+         r = "1 min AMRAP";
+         sets = 3;
+      }
+      return { n: (p.lib === EXERCISE_LIBRARY.bjj ? "🥋 " : (p.lib === EXERCISE_LIBRARY.conditioning ? "🥊 " : "")) + (ex.name||"Drill"), s: sets, r: r + " — " + (ex.notes||"") };
+    });
+    exercises = exercises.concat(selected);
+  });
+  
+  return {
+    name: "🎲 ELITE FIGHTER SHOCK",
+    type: "TACTICAL MMA CIRCUIT",
+    tag: exercises.length + " Combat-Focused Rounds. No Quit.",
+    warmup: "5 min jump rope + dynamic arm/leg swings + shadowboxing flow",
+    cooldown: "Hold deep stretches. Focus on breath control and heart rate recovery.",
+    exercises: exercises
+  };
+}
+
+function selectAIWorkout() {
+  const today = UI.activeDate;
+  const dd = getDD(today);
+  dd.aiWorkout = generateAIWorkout(UI.activeDay); 
+  selectEquip('ai_random'); 
+}
+
+// ═══════════════════════════════════════════════════════════
 // WORKOUT TAB
 // ═══════════════════════════════════════════════════════════
 function renderWorkoutTab(today,dd){
@@ -2052,7 +2166,7 @@ function renderWorkoutTab(today,dd){
   const safeBodyFix = typeof BODY_FIX !== 'undefined' ? BODY_FIX : [];
 
   const exDoneSelected = safeExercises.filter((_,i)=>dd.ex[exKey+'-'+i]).length;
-  const exDone = equip === 'ai_random' ? exDoneSelected : countCompletedExercisesAnyEquip(dd,dayIdx);
+  const exDone = equip === 'ai_random' ? exDoneSelected : (typeof countCompletedExercisesAnyEquip === 'function' ? countCompletedExercisesAnyEquip(dd,dayIdx) : exDoneSelected);
   const bfDone = safeBodyFix.filter((_,i)=>dd.bf['bf-'+dayIdx+'-'+i]).length;
   const minReq = Math.min(safeExercises.length, (typeof DB.minExercises !== 'undefined' ? DB.minExercises : 5)); 
   const totalItems = minReq + safeBodyFix.length;
@@ -2081,7 +2195,7 @@ function renderWorkoutTab(today,dd){
 
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 20px;font-size:10px;color:#555">
       <span>REQUIRED: <span style="color:var(--accent);font-family:Impact,sans-serif">${minReq}/${safeExercises.length}</span></span>
-      <div style="display:flex;gap:4px"><button onclick="event.stopPropagation();setMinEx(${Math.max(3,minReq-1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">−</button><button onclick="event.stopPropagation();setMinEx(${Math.min(safeExercises.length,minReq+1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">+</button></div>
+      <div style="display:flex;gap:4px"><button onclick="event.stopPropagation();if(typeof setMinEx==='function')setMinEx(${Math.max(3,minReq-1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">−</button><button onclick="event.stopPropagation();if(typeof setMinEx==='function')setMinEx(${Math.min(safeExercises.length,minReq+1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">+</button></div>
     </div>
     <div class="prog-bar-wrap">
      <div class="prog-bar-labels"><span>EXERCISES ${Math.min(exDone,minReq)}/${minReq} &middot; BODY FIX ${bfDone}/${safeBodyFix.length}</span><span style="color:${workoutCounted?'#00ff88':equipColor}">${pct}%${workoutCounted?' ✓':''}</span></div>
@@ -2096,11 +2210,11 @@ function renderWorkoutTab(today,dd){
         <div style="font-size:11px;color:${workoutCounted?'#00ff88':'#ff6b35'}">${workoutCounted?'Minimum met — counts for weekly score':'Need '+minReq+' completed exercises to count'}</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button onclick="submitWorkout('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='completed')?'#003d00':'rgba(0,60,0,0.2)'};border:1.5px solid #00ff88;border-radius:8px;color:#00ff88;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">✅ I WORKED OUT</button>
-        <button onclick="showOfficeModal('${today}',${dayIdx},'work')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-work')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">⚠️ Can't make it — work</button>
-        <button onclick="showOfficeModal('${today}',${dayIdx},'school')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-school')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">⚠️ Can't make it — school</button>
-        <button onclick="showLazyModal('${today}',${dayIdx})" style="padding:8px 10px;background:rgba(255,45,85,0.12);border:1.5px solid #ff2d55;border-radius:8px;color:#ff2d55;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">🔴 I'M A LAZY LITTLE BITCH</button>
-        <button onclick="showSickModal('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='sick')?'rgba(0,230,200,0.18)':'rgba(0,230,200,0.06)'};border:1px solid rgba(0,230,200,0.4);border-radius:8px;color:#00e6c8;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">🤒 I'M SICK</button>
+        <button onclick="if(typeof submitWorkout==='function')submitWorkout('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='completed')?'#003d00':'rgba(0,60,0,0.2)'};border:1.5px solid #00ff88;border-radius:8px;color:#00ff88;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">✅ I WORKED OUT</button>
+        <button onclick="if(typeof showOfficeModal==='function')showOfficeModal('${today}',${dayIdx},'work')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-work')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">⚠️ Can't make it — work</button>
+        <button onclick="if(typeof showOfficeModal==='function')showOfficeModal('${today}',${dayIdx},'school')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-school')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">⚠️ Can't make it — school</button>
+        <button onclick="if(typeof showLazyModal==='function')showLazyModal('${today}',${dayIdx})" style="padding:8px 10px;background:rgba(255,45,85,0.12);border:1.5px solid #ff2d55;border-radius:8px;color:#ff2d55;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">🔴 I'M A LAZY LITTLE BITCH</button>
+        <button onclick="if(typeof showSickModal==='function')showSickModal('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='sick')?'rgba(0,230,200,0.18)':'rgba(0,230,200,0.06)'};border:1px solid rgba(0,230,200,0.4);border-radius:8px;color:#00e6c8;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">🤒 I'M SICK</button>
       </div>
       ${(function(){
         var st = dd.rec&&dd.rec['workout-status-'+dayIdx];
@@ -2222,7 +2336,7 @@ function renderWorkoutTab(today,dd){
 
         if(allDoneNow){
           innerHtml += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid rgba(0,255,136,0.3);border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:var(--green)">WORKOUT COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fighter score +5 · Every rep counts</div></div>';
-          setTimeout(function(){if(typeof launchConfetti==='function')launchConfetti();},100);
+          if(typeof window.launchConfetti==='function') setTimeout(window.launchConfetti,100);
         }
         return innerHtml;
       })();
@@ -2329,7 +2443,7 @@ function renderWorkoutTab(today,dd){
 }
 
 function renderSpecialModuleTab(today, dd, type, dayTabsHTML) {
-  const lib = EXERCISE_LIBRARY[type];
+  const lib = typeof EXERCISE_LIBRARY !== 'undefined' ? EXERCISE_LIBRARY[type] : null;
   if(!lib) return dayTabsHTML + '<div style="padding:20px;color:red;text-align:center;">Library not found for: ' + type + '.</div><button onclick="UI.activeSpecial=null;render()" style="margin:20px;padding:12px;width:calc(100% - 40px);background:var(--card);color:#fff;border:1px solid #333;border-radius:8px">GO BACK</button>';
   
   const labels = {
