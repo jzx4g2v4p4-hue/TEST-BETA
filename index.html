@@ -1346,23 +1346,28 @@ function todayDow(){
 }
 
 function getDD(date){
-  if(!DB.days)DB.days={};
-  if(!DB.days[date])DB.days[date]={ex:{},w:{},bf:{},rec:{},supp:{},sex:{},habits:{},bp:{},sleep:{},urges:[],hygiene:{},minox:{}};
-  return DB.days[date];
-}
-function setAccent(c){document.documentElement.style.setProperty('--accent',c);}
-function getDayType(d){return({'MON':'PULL','TUE':'PUSH','WED':'LEGS','THU':'ARMS+CORE','FRI':'OPTIONAL','SAT':'FIGHT DAY','SUN':'REST'})[d]||'TRAIN';}
-
-  function countCompletedExercisesAnyEquip(dd, dayIdx){
-  if(!dd || !dd.ex) return 0;
-  var total=0;
-  EQUIP_KEYS.forEach(function(ek){
-    var prefix=ek+'-'+dayIdx+'-';
-    Object.keys(dd.ex).forEach(function(k){
-      if(dd.ex[k] && k.indexOf(prefix)===0) total++;
-    });
-  });
-  return total;
+  if(!DB.days) DB.days={};
+  if(!DB.days[date]) DB.days[date]={};
+  
+  // Automatically heal any missing data objects so the UI never crashes
+  let d = DB.days[date];
+  if(!d.ex) d.ex={};
+  if(!d.w) d.w={};
+  if(!d.bf) d.bf={};
+  if(!d.rec) d.rec={};
+  if(!d.supp) d.supp={};
+  if(!d.sex) d.sex={};
+  if(!d.habits) d.habits={};
+  if(!d.bp) d.bp={};
+  if(!d.sleep) d.sleep={};
+  if(!d.urges) d.urges=[];
+  if(!d.hygiene) d.hygiene={};
+  if(!d.minox) d.minox={};
+  if(!d.prayer) d.prayer={};
+  if(!d.morning) d.morning={};
+  if(!d.kegel) d.kegel={};
+  
+  return d;
 }
 function getDayExerciseTarget(dayIdx){
   var maxLen=0;
@@ -1913,20 +1918,14 @@ function selectAIWorkout() {
   dd.aiWorkout = generateAIWorkout(UI.activeDay); 
   selectEquip('ai_random'); 
 }
-
 // ═══════════════════════════════════════════════════════════
 // WORKOUT TAB
 // ═══════════════════════════════════════════════════════════
 function renderWorkoutTab(today,dd){
-  if (!dd.ex) dd.ex = {};
-  if (!dd.w) dd.w = {};
-  if (!dd.bf) dd.bf = {};
-  if (!dd.rec) dd.rec = {};
-
   const ad=UI.activeDay;
   const equip=UI.activeEquip;
 
-  const dayTabsHTML=`
+  const dayTabsHTML = `
     ${typeof renderWorkoutHomeHeader === 'function' ? renderWorkoutHomeHeader(today,dd) : ''}
     ${typeof renderCardinalAssumptions === 'function' ? renderCardinalAssumptions() : ''}
     <div class="day-tabs">
@@ -1936,7 +1935,7 @@ function renderWorkoutTab(today,dd){
         else if(d==='FRI') cls+=' recovery-day';
         else if(d==='SAT') cls+=' hiit-day';
         if(ad===d) cls+=' active';
-        return \`<button class="\${cls}" onclick="switchDay('\${d}')">\${d}</button>\`;
+        return `<button class="${cls}" onclick="switchDay('${d}')">${d}</button>`;
       }).join('')}
     </div>`;
 
@@ -1958,60 +1957,81 @@ function renderWorkoutTab(today,dd){
     ];
     let btnHTML='';
     equipOptions.forEach(function(e){
-      btnHTML+='<button onclick="selectEquip(\\''+e.k+'\\')" class="equip-btn" style="padding:14px 12px;background:rgba(16,28,46,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s">'
-        +'<div style="font-size:28px;margin-bottom:6px">'+e.icon+'</div>'
-        +'<div style="font-size:12px;font-family:Impact,sans-serif;letter-spacing:1px;color:#fff;margin-bottom:2px">'+e.label+'</div>'
-        +'</button>';
+      btnHTML+=`<button onclick="UI.activeSpecial=null;selectEquip('${e.k}')" class="equip-btn" style="padding:14px 12px;background:rgba(16,28,46,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s">
+        <div style="font-size:28px;margin-bottom:6px">${e.icon}</div>
+        <div style="font-size:12px;font-family:Impact,sans-serif;letter-spacing:1px;color:#fff;margin-bottom:2px">${e.label}</div>
+        </button>`;
+    });
+
+    const specialOptions=[
+      {k:'conditioning', icon:'🥊', label:'CONDITIONING'},
+      {k:'bjj', icon:'🥋', label:'BJJ DRILLS'},
+      {k:'flexibility', icon:'🧘‍♂️', label:'FLEXIBILITY'},
+      {k:'mewing', icon:'🤫', label:'MEWING'}
+    ];
+    let specialHTML = '';
+    specialOptions.forEach(function(e){
+      specialHTML+=`<button onclick="UI.activeEquip=null;UI.activeSpecial='${e.k}';render();" style="padding:14px 12px;background:rgba(20,30,50,0.6);border:1px solid rgba(0,212,255,0.2);border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s">
+        <div style="font-size:28px;margin-bottom:6px">${e.icon}</div>
+        <div style="font-size:12px;font-family:Impact,sans-serif;letter-spacing:1px;color:#00D4FF;margin-bottom:2px">${e.label}</div>
+        </button>`;
     });
 
     const targetMap = {'PULL':'MON', 'PUSH':'TUE', 'LEGS':'WED', 'ARMS+CORE':'THU'};
     const recDay = targetMap[recommendation] || 'MON';
 
-    return dayTabsHTML + \`
+    if(UI.activeSpecial){
+       return renderSpecialModuleTab(today, dd, UI.activeSpecial, dayTabsHTML);
+    }
+
+    return dayTabsHTML + `
       <div style="padding:16px">
         <div style="text-align:center;margin-bottom:24px">
-          <div style="font-size:11px;letter-spacing:3px;color:var(--text3);font-family:Impact,sans-serif">\${dateLabel(today)}</div>
+          <div style="font-size:11px;letter-spacing:3px;color:var(--text3);font-family:Impact,sans-serif">${dateLabel(today)}</div>
           <div style="font-size:24px;font-family:Impact,sans-serif;color:var(--cyan);letter-spacing:2px;margin-top:4px">WORKOUT CONFIGURATION</div>
         </div>
 
         <div style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:rgba(10,20,40,0.8);border:1px solid var(--border2);font-family:Impact,sans-serif;font-size:12px;text-align:center">
           <div style="font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px;">WEEKLY BALANCE</div>
           <div style="display:flex;justify-content:space-around;color:#fff">
-            <div>Pull \${stats.pull>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
-            <div>Push \${stats.push>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
-            <div>Legs \${stats.legs>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
-            <div>Arms \${stats.arms>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
+            <div>Pull ${stats.pull>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
+            <div>Push ${stats.push>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
+            <div>Legs ${stats.legs>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
+            <div>Arms ${stats.arms>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
           </div>
         </div>
 
         <div style="margin-bottom:24px;padding:16px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,255,136,0.05));border:1px solid rgba(0,212,255,0.3);border-radius:14px;">
           <div style="font-size:10px;letter-spacing:2px;color:var(--cyan);font-family:Impact,sans-serif;margin-bottom:12px">STEP 1: SELECT YOUR TARGET</div>
           
-          <button onclick="switchDay('\${recDay}')" style="width:100%;padding:14px;background:\${ad===recDay?'rgba(0,255,136,0.2)':'var(--card)'};border:1px solid \${ad===recDay?'#00ff88':'#333'};border-radius:10px;color:#fff;font-family:Impact,sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;margin-bottom:8px;text-align:left;display:flex;justify-content:space-between;align-items:center">
-            <span>🔥 DO RECOMMENDED: \${recommendation}</span>
-            <span style="color:#00ff88;font-size:16px">\${ad===recDay?'✓':''}</span>
+          <button onclick="switchDay('${recDay}')" style="width:100%;padding:14px;background:${ad===recDay?'rgba(0,255,136,0.2)':'var(--card)'};border:1px solid ${ad===recDay?'#00ff88':'#333'};border-radius:10px;color:#fff;font-family:Impact,sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;margin-bottom:8px;text-align:left;display:flex;justify-content:space-between;align-items:center">
+            <span>🔥 DO RECOMMENDED: ${recommendation}</span>
+            <span style="color:#00ff88;font-size:16px">${ad===recDay?'✓':''}</span>
           </button>
           
           <div style="font-size:10px;color:var(--text3);margin:16px 0 8px">OR OVERRIDE TARGET MUSCLE:</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
-            \${[{d:'MON', l:'PULL'},{d:'TUE', l:'PUSH'},{d:'WED', l:'LEGS'},{d:'THU', l:'ARMS'}].map(m => \`
-              <button onclick="switchDay('\${m.d}')" style="padding:10px 4px;background:\${ad===m.d?'var(--cyan)':'var(--card)'};border:1px solid \${ad===m.d?'var(--cyan)':'#333'};border-radius:8px;color:\${ad===m.d?'#000':'#fff'};font-family:Impact,sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s">
-                \${m.l}
+            ${[{d:'MON', l:'PULL'},{d:'TUE', l:'PUSH'},{d:'WED', l:'LEGS'},{d:'THU', l:'ARMS'}].map(m => `
+              <button onclick="switchDay('${m.d}')" style="padding:10px 4px;background:${ad===m.d?'var(--cyan)':'var(--card)'};border:1px solid ${ad===m.d?'var(--cyan)':'#333'};border-radius:8px;color:${ad===m.d?'#000':'#fff'};font-family:Impact,sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s">
+                ${m.l}
               </button>
-            \`).join('')}
+            `).join('')}
           </div>
         </div>
 
         <div style="padding:16px;background:rgba(10,18,30,0.8);border:1px solid rgba(255,255,255,0.05);border-radius:14px;margin-bottom:16px">
           <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif;margin-bottom:12px">STEP 2: SELECT EQUIPMENT</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\${btnHTML}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${btnHTML}</div>
+          
+          <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif;margin:16px 0 12px">OR SELECT A SPECIALIZED MODULE:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${specialHTML}</div>
         </div>
 
         <button onclick="selectAIWorkout()" style="width:100%;padding:18px;background:linear-gradient(90deg,#ff0055,#ff8c00);border:1px solid rgba(255,255,255,0.2);border-radius:14px;color:#fff;font-family:Impact,sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:0 0 20px rgba(255,0,85,0.4);display:flex;align-items:center;justify-content:center;gap:10px">
           <span>🎲</span> AI SHOCK RANDOMIZER
         </button>
       </div>
-    \`;
+    `;
   }
 
   let day, equipData, equipColor, exKey;
@@ -2022,9 +2042,9 @@ function renderWorkoutTab(today,dd){
     equipColor = '#ff0055';
     exKey = 'ai_random-'+dayIdx;
   } else {
-    equipData = FIGHTERS[equip];
+    equipData = FIGHTERS[equip] || {label: String(equip).toUpperCase(), color: '#00ff88', days: []};
     day = equipData.days[dayIdx] || {name: "REST", type: "REST", tag: "", warmup: "", cooldown: "", exercises: []};
-    equipColor = equipData.color;
+    equipColor = equipData.color || '#00ff88';
     exKey = equip+'-'+dayIdx;
   }
 
@@ -2034,57 +2054,57 @@ function renderWorkoutTab(today,dd){
   const exDoneSelected = safeExercises.filter((_,i)=>dd.ex[exKey+'-'+i]).length;
   const exDone = equip === 'ai_random' ? exDoneSelected : countCompletedExercisesAnyEquip(dd,dayIdx);
   const bfDone = safeBodyFix.filter((_,i)=>dd.bf['bf-'+dayIdx+'-'+i]).length;
-  const minReq = Math.min(safeExercises.length, DB.minExercises||5); 
+  const minReq = Math.min(safeExercises.length, (typeof DB.minExercises !== 'undefined' ? DB.minExercises : 5)); 
   const totalItems = minReq + safeBodyFix.length;
   const pct = totalItems > 0 ? Math.min(100, Math.round((Math.min(exDone, minReq) + bfDone) / totalItems * 100)) : 0;
   const workoutCounted = exDone >= minReq;
 
-  return dayTabsHTML + \`
+  let html = dayTabsHTML + `
     <div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
       <div>
-        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">\${day.type||'WORKOUT'}</div>
-        <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:\${equipColor}">\${day.name||'Regimen'}</div>
-        <div style="font-size:11px;color:#666;margin-top:2px">\${day.tag||''}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:3px">\${exDoneSelected} done on this setup · \${exDone} total across all setups</div>
+        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">${day.type||'WORKOUT'}</div>
+        <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:${equipColor}">${day.name||'Regimen'}</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">${day.tag||''}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">${exDoneSelected} done on this setup · ${exDone} total across all setups</div>
       </div>
-      <button onclick="selectEquip(null)" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">\${equipData.label}<br><span style="color:var(--text3);font-size:9px">TAP TO CHANGE</span></button>
+      <button onclick="selectEquip(null)" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">${equipData.label}<br><span style="color:var(--text3);font-size:9px">TAP TO CHANGE</span></button>
     </div>
 
     <div class="section-lbl" style="color:#ffcc00; padding:0 20px; margin-top:16px;">🟡 PHASE 1: WARM-UP</div>
-    <div class="info-box warm" style="cursor:pointer" onclick="toggleWarmup('\${today}','wu-\${equip}-\${dayIdx}')">
-      <div style="width:20px;height:20px;border-radius:4px;border:2px solid \${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'#333'};background:\${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
-        \${dd.w['wu-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
+    <div class="info-box warm" style="cursor:pointer" onclick="toggleWarmup('${today}','wu-${equip}-${dayIdx}')">
+      <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'#333'};background:${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
+        ${dd.w['wu-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
       </div>
       <span class="box-icon">🔥</span>
-      <div><div class="box-lbl">WARM-UP · TAP TO CHECK OFF</div><div class="box-txt" style="color:\${dd.w['wu-'+equip+'-'+dayIdx]?'#444':'#00ff88'};\${dd.w['wu-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">\${day.warmup||''}</div></div>
+      <div><div class="box-lbl">WARM-UP · TAP TO CHECK OFF</div><div class="box-txt" style="color:${dd.w['wu-'+equip+'-'+dayIdx]?'#444':'#00ff88'};${dd.w['wu-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.warmup||''}</div></div>
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 20px;font-size:10px;color:#555">
-      <span>REQUIRED: <span style="color:var(--accent);font-family:Impact,sans-serif">\${minReq}/\${safeExercises.length}</span></span>
-      <div style="display:flex;gap:4px"><button onclick="event.stopPropagation();setMinEx(\${Math.max(3,minReq-1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">−</button><button onclick="event.stopPropagation();setMinEx(\${Math.min(safeExercises.length,minReq+1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">+</button></div>
+      <span>REQUIRED: <span style="color:var(--accent);font-family:Impact,sans-serif">${minReq}/${safeExercises.length}</span></span>
+      <div style="display:flex;gap:4px"><button onclick="event.stopPropagation();setMinEx(${Math.max(3,minReq-1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">−</button><button onclick="event.stopPropagation();setMinEx(${Math.min(safeExercises.length,minReq+1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">+</button></div>
     </div>
     <div class="prog-bar-wrap">
-     <div class="prog-bar-labels"><span>EXERCISES \${Math.min(exDone,minReq)}/\${minReq} &middot; BODY FIX \${bfDone}/\${safeBodyFix.length}</span><span style="color:\${workoutCounted?'#00ff88':equipColor}">\${pct}%\${workoutCounted?' &#x2713;':''}</span></div>
-      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:\${pct}%;background:\${workoutCounted?'#00ff88':equipColor}"></div></div>
+     <div class="prog-bar-labels"><span>EXERCISES ${Math.min(exDone,minReq)}/${minReq} &middot; BODY FIX ${bfDone}/${safeBodyFix.length}</span><span style="color:${workoutCounted?'#00ff88':equipColor}">${pct}%${workoutCounted?' ✓':''}</span></div>
+      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${pct}%;background:${workoutCounted?'#00ff88':equipColor}"></div></div>
     </div>
 
-    \${typeof renderRestBar === 'function' ? renderRestBar() : ''}
+    ${typeof renderRestBar === 'function' ? renderRestBar() : ''}
 
     <div style="margin:10px 20px 14px;background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
         <div style="font-size:11px;color:#666">Workout validation</div>
-        <div style="font-size:11px;color:\${workoutCounted?'#00ff88':'#ff6b35'}">\${workoutCounted?'Minimum met — counts for weekly score':'Need '+minReq+' completed exercises to count'}</div>
+        <div style="font-size:11px;color:${workoutCounted?'#00ff88':'#ff6b35'}">${workoutCounted?'Minimum met — counts for weekly score':'Need '+minReq+' completed exercises to count'}</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button onclick="submitWorkout('\${today}',\${dayIdx})" style="padding:8px 10px;background:\${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='completed')?'#003d00':'rgba(0,60,0,0.2)'};border:1.5px solid #00ff88;border-radius:8px;color:#00ff88;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x2705; I WORKED OUT</button>
-        <button onclick="showOfficeModal('\${today}',\${dayIdx},'work')" style="padding:8px 10px;background:\${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-work')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x26A0; Can't make it &mdash; work</button>
-        <button onclick="showOfficeModal('\${today}',\${dayIdx},'school')" style="padding:8px 10px;background:\${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-school')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x26A0; Can't make it &mdash; school</button>
-        <button onclick="showLazyModal('\${today}',\${dayIdx})" style="padding:8px 10px;background:rgba(255,45,85,0.12);border:1.5px solid #ff2d55;border-radius:8px;color:#ff2d55;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x1F534; I'M A LAZY LITTLE BITCH</button>
-        <button onclick="showSickModal('\${today}',\${dayIdx})" style="padding:8px 10px;background:\${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='sick')?'rgba(0,230,200,0.18)':'rgba(0,230,200,0.06)'};border:1px solid rgba(0,230,200,0.4);border-radius:8px;color:#00e6c8;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x1F912; I'M SICK</button>
+        <button onclick="submitWorkout('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='completed')?'#003d00':'rgba(0,60,0,0.2)'};border:1.5px solid #00ff88;border-radius:8px;color:#00ff88;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">✅ I WORKED OUT</button>
+        <button onclick="showOfficeModal('${today}',${dayIdx},'work')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-work')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">⚠️ Can't make it — work</button>
+        <button onclick="showOfficeModal('${today}',${dayIdx},'school')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-school')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">⚠️ Can't make it — school</button>
+        <button onclick="showLazyModal('${today}',${dayIdx})" style="padding:8px 10px;background:rgba(255,45,85,0.12);border:1.5px solid #ff2d55;border-radius:8px;color:#ff2d55;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">🔴 I'M A LAZY LITTLE BITCH</button>
+        <button onclick="showSickModal('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='sick')?'rgba(0,230,200,0.18)':'rgba(0,230,200,0.06)'};border:1px solid rgba(0,230,200,0.4);border-radius:8px;color:#00e6c8;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">🤒 I'M SICK</button>
       </div>
-      \${(function(){
+      ${(function(){
         var st = dd.rec&&dd.rec['workout-status-'+dayIdx];
-        var labels = {'completed':'&#x2705; Logged — full workout','completed-full-circuit':'&#x2705; Logged — 12-min circuit','completed-bare-minimum':'&#x26A1; Logged — bare minimum','completed-emergency-3min':'&#x1F6A8; Logged — 3-min emergency','missed-work':'&#x26A0; Excused — work commitment','missed-school':'&#x26A0; Excused — school commitment','sick':'&#x1F912; Logged — sick day rest','skipped-lazy':'&#x1F6AE; Skipped — no excuse'};
+        var labels = {'completed':'✅ Logged — full workout','completed-full-circuit':'✅ Logged — 12-min circuit','completed-bare-minimum':'⚡ Logged — bare minimum','completed-emergency-3min':'🚨 Logged — 3-min emergency','missed-work':'⚠️ Excused — work commitment','missed-school':'⚠️ Excused — school commitment','sick':'🤒 Logged — sick day rest','skipped-lazy':'🚫 Skipped — no excuse'};
         if(!st) return '<div style="font-size:10px;color:#555;margin-top:6px">Not yet logged today</div>';
         var c = st.startsWith('completed')||st==='completed'?'#00ff88':st==='sick'?'#00e6c8':st.startsWith('missed')?'#ffcc00':'#ff4444';
         return '<div style="font-size:10px;color:'+c+';margin-top:6px;font-family:Impact,sans-serif;letter-spacing:1px">'+(labels[st]||st)+'</div>';
@@ -2093,7 +2113,9 @@ function renderWorkoutTab(today,dd){
 
     <div class="ex-section" id="ex-section-main">
       <div class="section-lbl" style="color:#ff4444; margin-top:20px;">🔴 PHASE 2: LIFTING REGIMEN</div>
-      \${(()=>{
+      `;
+
+      html += (()=>{
         var allExercises = safeExercises.map(function(ex,i){return {ex:ex,i:i};});
         var doneExes = allExercises.filter(function(o){return !!dd.ex[exKey+'-'+o.i];});
         var remainExes = allExercises.filter(function(o){return !dd.ex[exKey+'-'+o.i];});
@@ -2113,7 +2135,7 @@ function renderWorkoutTab(today,dd){
           var isTimed=['battle rope','battle ropes','sled push','sled pull','farmer carry','farmer walk','jump rope','assault bike','rower','ski erg'].some(function(k){return exName.toLowerCase().includes(k);});
           var timedVal=(dd.w&&dd.w[key+'-time'])||'';
           var isSuperset = exName.includes(' + ') || exName.toLowerCase().includes('superset');
-          var supersetParts = isSuperset ? exName.replace(/\\s*\\(superset.*?\\)/i,'').split(' + ').map(function(p){return p.trim();}) : [exName];
+          var supersetParts = isSuperset ? exName.replace(/\s*\(superset.*?\)/i,'').split(' + ').map(function(p){return p.trim();}) : [exName];
           
           function buildSummary(partIdx){
             var rows=[];
@@ -2122,128 +2144,153 @@ function renderWorkoutTab(today,dd){
           }
           var allWeightSummary = supersetParts.map(function(_,pi){return buildSummary(pi);}).filter(Boolean).join(' | ');
 
-          var html = '';
-          html += '<div class="ex-item '+(isDone?'done ':'')+(isTimed?'timed-item':'')+'"  style="'+(isDone?'opacity:0.88;':'')+'">' ;
-          html += '<div class="ex-top">';
-          html += '<div class="ex-check '+(isDone?'checked ':'')+(isTimed?'timed-check':'')+'" onclick="toggleEx(\\''+ key +'\\',\\'ex\\')">'+'</div>';
-          html += '<div class="ex-info" onclick="toggleWeight(\\''+ key +'\\')">' ;
-          html += '<div class="ex-name">'+(typeof weightProgressAlert==='function'?weightProgressAlert(equip,dayIdx,i):'')+(isSuperset?'&#x1F501; SUPERSET':'')+( isSuperset?'<br>':'')+ supersetParts.join('<br>+ ')+'</div>';
+          var htmlStr = '';
+          htmlStr += '<div class="ex-item '+(isDone?'done ':'')+(isTimed?'timed-item':'')+'" style="'+(isDone?'opacity:0.88;':'')+'">' ;
+          htmlStr += '<div class="ex-top">';
+          htmlStr += '<div class="ex-check '+(isDone?'checked ':'')+(isTimed?'timed-check':'')+'" onclick="toggleEx(\''+ key +'\',\'ex\')"></div>';
+          htmlStr += '<div class="ex-info" onclick="toggleWeight(\''+ key +'\')">' ;
+          htmlStr += '<div class="ex-name">'+(typeof weightProgressAlert==='function'?weightProgressAlert(equip,dayIdx,i):'')+(isSuperset?'🔄 SUPERSET':'')+( isSuperset?'<br>':'')+ supersetParts.join('<br>+ ')+'</div>';
           if(isTimed){
-            html += '<div class="ex-note" style="font-size:11px;color:'+(timedVal?'var(--accent)':'#555')+'">' + (timedVal ? '&#x23F1; '+timedVal+'s logged' : exSets+' sets &middot; '+exReps)+'</div>';
+            htmlStr += '<div class="ex-note" style="font-size:11px;color:'+(timedVal?'var(--accent)':'#555')+'">' + (timedVal ? '⏱ '+timedVal+'s logged' : exSets+' sets &middot; '+exReps)+'</div>';
           } else {
-            html += '<div class="ex-note" style="font-size:11px;color:'+(allWeightSummary?'var(--accent)':'#555')+ '">' + (allWeightSummary||exSets+' sets &middot; tap to log weights')+'</div>';
+            htmlStr += '<div class="ex-note" style="font-size:11px;color:'+(allWeightSummary?'var(--accent)':'#555')+ '">' + (allWeightSummary||exSets+' sets &middot; tap to log weights')+'</div>';
           }
-          html += '</div>';
-          html += '<div class="ex-reps-badge">'+(isTimed?'&#x23F1;':exSets+'&times;'+exReps)+'</div>';
-          html += '</div>';
+          htmlStr += '</div>';
+          htmlStr += '<div class="ex-reps-badge">'+(isTimed?'⏱':exSets+'&times;'+exReps)+'</div>';
+          htmlStr += '</div>';
 
           if(isTimed){
-            html += '<div class="ex-weight '+(isOpen?'open':'')+'">' ;
-            html += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG TIME PER SET</div>';
+            htmlStr += '<div class="ex-weight '+(isOpen?'open':'')+'">' ;
+            htmlStr += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG TIME PER SET</div>';
             for(var s=0;s<exSets;s++){
-              html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
-              html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
-              html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-time-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
-              html += '<span style="font-size:12px;color:#555">sec</span>';
-              html += '</div>';
+              htmlStr += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+              htmlStr += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
+              htmlStr += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-time-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
+              htmlStr += '<span style="font-size:12px;color:#555">sec</span>';
+              htmlStr += '</div>';
             }
-            html += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved</div>';
-            html += '</div>';
+            htmlStr += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved</div>';
+            htmlStr += '</div>';
           } else if(!noWeight){
-            html += '<div class="ex-weight '+(isOpen?'open':'')+'">' ;
+            htmlStr += '<div class="ex-weight '+(isOpen?'open':'')+'">' ;
             if(isSuperset){
               supersetParts.forEach(function(part,pi){
-                html += '<div style="margin-bottom:14px">';
-                html += '<div style="font-size:10px;letter-spacing:2px;color:#ff6b35;margin-bottom:8px;padding:4px 8px;background:#1a0e00;border-radius:4px;border-left:2px solid #ff6b35">'+part.toUpperCase()+'</div>';
+                htmlStr += '<div style="margin-bottom:14px">';
+                htmlStr += '<div style="font-size:10px;letter-spacing:2px;color:#ff6b35;margin-bottom:8px;padding:4px 8px;background:#1a0e00;border-radius:4px;border-left:2px solid #ff6b35">'+part.toUpperCase()+'</div>';
                 for(var s=0;s<exSets;s++){
-                  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
-                  html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
-                  html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-p'+pi+'-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
-                  html += '<span style="font-size:12px;color:#555">lbs</span>';
-                  html += '<input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+ key +'-p'+pi+'-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/>';
+                  htmlStr += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+                  htmlStr += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
+                  htmlStr += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-p'+pi+'-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
+                  htmlStr += '<span style="font-size:12px;color:#555">lbs</span>';
+                  htmlStr += '<input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+ key +'-p'+pi+'-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/>';
                   var repTarget = (exReps.split('/')[pi]||exReps);
-                  html += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+repTarget+' reps</span>';
-                  html += '</div>';
+                  htmlStr += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+repTarget+' reps</span>';
+                  htmlStr += '</div>';
                 }
-                html += '</div>';
+                htmlStr += '</div>';
               });
             } else {
-              html += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG WEIGHT PER SET</div>';
+              htmlStr += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG WEIGHT PER SET</div>';
               for(var s=0;s<exSets;s++){
-                html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
-                html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
-                html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-p0-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
-                html += '<span style="font-size:12px;color:#555">lbs</span>';
-                html += '<input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+ key +'-p0-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/>';
-                html += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+exReps+' reps</span>';
-                html += '</div>';
+                htmlStr += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+                htmlStr += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
+                htmlStr += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-p0-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
+                htmlStr += '<span style="font-size:12px;color:#555">lbs</span>';
+                htmlStr += '<input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+ key +'-p0-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/>';
+                htmlStr += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+exReps+' reps</span>';
+                htmlStr += '</div>';
               }
             }
-            html += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved</div>';
-            html += '</div>';
+            htmlStr += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved</div>';
+            htmlStr += '</div>';
           }
-          html += '</div>';
-          return html;
+          htmlStr += '</div>';
+          return htmlStr;
         }
 
-        var html = '';
+        var innerHtml = '';
         if(doneExes.length > 0){
-          html += '<div style="display:flex;align-items:center;gap:8px;padding:2px 0 8px;margin-top:2px"><span style="font-size:13px">&#x2705;</span><span style="font-size:10px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--green)">COMPLETED ('+doneExes.length+')</span><div style="flex:1;height:1px;background:rgba(0,255,136,0.2)"></div></div>';
-          html += doneExes.map(renderSingleEx).join('');
+          innerHtml += '<div style="display:flex;align-items:center;gap:8px;padding:2px 0 8px;margin-top:2px"><span style="font-size:13px">✅</span><span style="font-size:10px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--green)">COMPLETED ('+doneExes.length+')</span><div style="flex:1;height:1px;background:rgba(0,255,136,0.2)"></div></div>';
+          innerHtml += doneExes.map(renderSingleEx).join('');
         }
         if(remainExes.length > 0){
           if(doneExes.length > 0){
-            html += '<div style="display:flex;align-items:center;gap:8px;padding:10px 0 8px"><span style="font-size:13px">&#x25FD;</span><span style="font-size:10px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--text2)">REMAINING ('+remainExes.length+')</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div></div>';
+            innerHtml += '<div style="display:flex;align-items:center;gap:8px;padding:10px 0 8px"><span style="font-size:13px">▫️</span><span style="font-size:10px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--text2)">REMAINING ('+remainExes.length+')</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div></div>';
           }
-          html += remainExes.map(renderSingleEx).join('');
+          innerHtml += remainExes.map(renderSingleEx).join('');
         }
 
         if(allDoneNow){
-          html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid rgba(0,255,136,0.3);border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">&#x1F3C6;</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:var(--green)">WORKOUT COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fighter score +5 · Every rep counts</div></div>';
+          innerHtml += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid rgba(0,255,136,0.3);border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:var(--green)">WORKOUT COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fighter score +5 · Every rep counts</div></div>';
           setTimeout(function(){if(typeof launchConfetti==='function')launchConfetti();},100);
         }
-        return html;
-      })()}
+        return innerHtml;
+      })();
+
+  html += `
     </div>
 
     <div class="divider"></div>
 
-    <div class="section-lbl" style="color:#00D4FF; padding:0 20px; margin-top:20px;">🔵 PHASE 3: MARTIAL ARTS ROUNDS</div>
-    \${typeof renderWorkoutComboBlock === 'function' ? renderWorkoutComboBlock(today, dd, dayIdx) : ''}
+    <div class="section-lbl" style="color:#00D4FF; padding:0 20px; margin-top:20px;">🔵 PHASE 3: MARTIAL ARTS & FINISHERS</div>
+    ${typeof renderWorkoutComboBlock === 'function' ? renderWorkoutComboBlock(today, dd, dayIdx) : ''}
+    
+    <div style="padding:0 20px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;margin-top:12px">Daily Combat Finisher (Auto-Generated)</div>
+      ${[
+        {type: 'conditioning', ex: (typeof EXERCISE_LIBRARY !== 'undefined' && EXERCISE_LIBRARY.conditioning) ? EXERCISE_LIBRARY.conditioning[dayIdx % EXERCISE_LIBRARY.conditioning.length] : {name:'Conditioning Drill',notes:'1 min AMRAP'}},
+        {type: 'bjj', ex: (typeof EXERCISE_LIBRARY !== 'undefined' && EXERCISE_LIBRARY.bjj) ? EXERCISE_LIBRARY.bjj[dayIdx % EXERCISE_LIBRARY.bjj.length] : {name:'BJJ Solo Drill',notes:'1 min AMRAP'}}
+      ].map((item, i) => {
+        const key = 'post-'+dayIdx+'-'+item.type;
+        const isDone = !!dd.ex[key];
+        return `
+          <div class="ex-item ${isDone?'done':''}" style="${isDone?'':'border-color:#1a2e3a'}">
+            <div class="ex-top" onclick="toggleEx('${key}','ex')">
+              <div class="ex-check ${isDone?'checked':''}" style="${isDone?'background:#00D4FF;border-color:#00D4FF;color:#000':''}">${isDone?'✓':''}</div>
+              <div class="ex-info">
+                <div class="ex-name" style="${isDone?'color:var(--text3)':''}"><span style="font-size:12px;margin-right:6px">${item.type==='bjj'?'🥋':'⏱️'}</span>${item.ex.name}</div>
+                <div class="ex-note" style="color:${isDone?'var(--text3)':'#00D4FF88'}">${item.ex.notes}</div>
+              </div>
+              <div class="ex-reps-badge" style="color:#00D4FF">3 × 1 min</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
 
     <div class="divider"></div>
 
     <div class="ex-section" style="margin-top:4px">
       <div class="section-lbl" style="color:#00ff88">🟢 PHASE 4: BODY FIX & COOL-DOWN</div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:0 0 4px">Do these directly after your lifting and striking</div>
-      \${safeBodyFix.map((bf,i)=>{
-        const key=\`bf-\${dayIdx}-\${i}\`;
+      ${safeBodyFix.map((bf,i)=>{
+        const key='bf-'+dayIdx+'-'+i;
         const isDone=!!dd.bf[key];
-        return \`
-          <div class="ex-item body-item \${isDone?'done':''}" style="\${isDone?'':'border-color:#1a1a2e'}">
-            <div class="ex-top" onclick="toggleBF('\${key}')">
-              <div class="ex-check blue-check \${isDone?'checked':''}"></div>
+        return `
+          <div class="ex-item body-item ${isDone?'done':''}" style="${isDone?'':'border-color:#1a1a2e'}">
+            <div class="ex-top" onclick="toggleBF('${key}')">
+              <div class="ex-check blue-check ${isDone?'checked':''}"></div>
               <div class="ex-info">
-                <div class="ex-name">\${bf.n}</div>
-                <div class="ex-note" style="color:#6699ff88">\${bf.detail}</div>
+                <div class="ex-name">${bf.n}</div>
+                <div class="ex-note" style="color:#6699ff88">${bf.detail}</div>
               </div>
-              <div class="ex-reps-badge blue">\${bf.type==='techneck'?'🖥️':bf.type==='sciatica'?'⚡':bf.type==='flexibility'?'🦵':'🦵'}</div>
+              <div class="ex-reps-badge blue">${bf.type==='techneck'?'🖥️':bf.type==='sciatica'?'⚡':bf.type==='flexibility'?'🦵':'🦵'}</div>
             </div>
-          </div>\`;
+          </div>`;
       }).join('')}
     </div>
 
-    \${typeof renderWorkoutKegelBlock === 'function' ? renderWorkoutKegelBlock(today, dd) : ''}
+    ${typeof renderWorkoutKegelBlock === 'function' ? renderWorkoutKegelBlock(today, dd) : ''}
 
-    <div class="info-box cool" style="margin-top:14px;cursor:pointer" onclick="toggleWarmup('\${today}','cd-\${equip}-\${dayIdx}')">
-      <div style="width:20px;height:20px;border-radius:4px;border:2px solid \${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'#333'};background:\${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
-        \${dd.w['cd-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
+    <div class="info-box cool" style="margin-top:14px;cursor:pointer" onclick="toggleWarmup('${today}','cd-${equip}-${dayIdx}')">
+      <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'#333'};background:${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
+        ${dd.w['cd-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
       </div>
       <span class="box-icon">❄️</span>
       <div><div class="box-lbl">COOL-DOWN · TAP TO CHECK OFF</div>
-    <div class="box-txt" style="color:\${dd.w['cd-'+equip+'-'+dayIdx]?'#444':'#aa88ff'};\${dd.w['cd-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">\${day.cooldown||''}</div></div>
+      <div class="box-txt" style="color:${dd.w['cd-'+equip+'-'+dayIdx]?'#444':'#aa88ff'};${dd.w['cd-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.cooldown||''}</div></div>
     </div>
-    \${typeof renderStretchTimers === 'function' ? renderStretchTimers(day.cooldown) : ''}
+    ${typeof renderStretchTimers === 'function' ? renderStretchTimers(day.cooldown) : ''}
 
     <div style="margin:14px 20px 0;background:#0d1a12;border-radius:10px;border:1px solid #1a3a1a;overflow:hidden">
       <div style="padding:12px 16px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center">
@@ -2253,32 +2300,94 @@ function renderWorkoutTab(today,dd){
         </div>
         <span style="font-size:20px">💪</span>
       </div>
-      \${[
+      ${[
         {k:'pw-shake', icon:'🥤', name:'Protein Shake', detail:'1 scoop · 31g protein + 5g creatine · most important on training days'},
         {k:'pw-water', icon:'💧', name:'Rehydrate — 500ml+ water', detail:'Replace what you lost · creatine needs water to work'},
         {k:'pw-cold', icon:'🚿', name:'Cold shower finish', detail:'30 sec cold at the end · recovery + blood flow rebound + testosterone'},
       ].map(item=>{
         const done=!!dd.w[item.k+'-'+equip+'-'+dayIdx];
-        return \`
-          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1a2e1f;cursor:pointer;\${done?'background:#071208;':''}" 
-            onclick="toggleWarmup('\${today}','\${item.k}-\${equip}-\${dayIdx}')">
-            <div style="width:20px;height:20px;border-radius:4px;border:2px solid \${done?'#00ff88':'#333'};background:\${done?'#00ff88':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              \${done?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1a2e1f;cursor:pointer;${done?'background:#071208;':''}" 
+            onclick="toggleWarmup('${today}','${item.k}-${equip}-${dayIdx}')">
+            <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${done?'#00ff88':'#333'};background:${done?'#00ff88':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              ${done?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
             </div>
-            <span style="font-size:16px">\${item.icon}</span>
+            <span style="font-size:16px">${item.icon}</span>
             <div>
-              <div style="font-size:13px;\${done?'color:var(--text3);text-decoration:line-through':''}">\${item.name}</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px">\${item.detail}</div>
+              <div style="font-size:13px;${done?'color:var(--text3);text-decoration:line-through':''}">${item.name}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">${item.detail}</div>
             </div>
-          </div>\`;
+          </div>`;
       }).join('')}
       <div style="padding:10px 16px;font-size:11px;color:var(--text3);font-style:italic">
         💡 On rest days drink your shake in the morning instead
       </div>
     </div>
-  \`;
+  `;
+
+  return html;
 }
 
+function renderSpecialModuleTab(today, dd, type, dayTabsHTML) {
+  const lib = EXERCISE_LIBRARY[type];
+  if(!lib) return dayTabsHTML + '<div style="padding:20px;color:red;text-align:center;">Library not found for: ' + type + '.</div><button onclick="UI.activeSpecial=null;render()" style="margin:20px;padding:12px;width:calc(100% - 40px);background:var(--card);color:#fff;border:1px solid #333;border-radius:8px">GO BACK</button>';
+  
+  const labels = {
+    conditioning: {n:'FIGHTER CONDITIONING', c:'#ff4444', emoji:'🥊', t:'Cardio & Explosive Power'},
+    bjj: {n:'BJJ SOLO DRILLS', c:'#6699ff', emoji:'🥋', t:'Mat Movements & Hip Mobility'},
+    flexibility: {n:'FLEXIBILITY & SPLITS', c:'#aa88ff', emoji:'🧘‍♂️', t:'Deep Mobility Progression'},
+    mewing: {n:'MEWING REGIMEN', c:'#00D4FF', emoji:'🤫', t:'Jaw & Posture Alignment'},
+  };
+  const config = labels[type] || {n: type.toUpperCase(), c:'#fff', emoji:'⚡', t:''};
+  const exKey = 'spec-'+type;
+  
+  const exDone = lib.filter((_,i)=>dd.ex && dd.ex[exKey+'-'+i]).length;
+  const pct = Math.round(exDone/lib.length*100) || 0;
+
+  let html = dayTabsHTML + `
+    <div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">${config.emoji} SPECIALIZED MODULE</div>
+        <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:${config.c}">${config.n}</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">${config.t}</div>
+      </div>
+      <button onclick="UI.activeSpecial=null;render()" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">CLOSE</button>
+    </div>
+
+    <div class="prog-bar-wrap">
+      <div class="prog-bar-labels"><span>PROGRESS</span><span style="color:${config.c}">${exDone}/${lib.length}</span></div>
+      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${pct}%;background:${config.c}"></div></div>
+    </div>
+    
+    <div class="ex-section">
+  `;
+
+  lib.forEach((ex, i) => {
+    const key = exKey+'-'+i;
+    const isDone = dd.ex && !!dd.ex[key];
+    
+    html += `
+      <div class="ex-item ${isDone?'done ':''}" style="${isDone?'opacity:0.7;border-color:'+config.c+'44;background:rgba(0,0,0,0.4)':''}">
+        <div class="ex-top" onclick="toggleEx('${key}','ex')">
+          <div class="ex-check ${isDone?'checked ':''}" style="${isDone?'background:'+config.c+';border-color:'+config.c:''}"></div>
+          <div class="ex-info">
+            <div class="ex-name" style="${isDone?'color:var(--text3)':''}">${ex.name}</div>
+            <div class="ex-note" style="color:var(--text3)">${ex.notes}</div>
+          </div>
+          <div class="ex-reps-badge" style="color:${config.c}">${ex.sets} × ${ex.reps}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  if (exDone === lib.length && lib.length > 0) {
+    html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid '+config.c+'66;border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">🔥</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:'+config.c+'">MODULE COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Discipline secured.</div></div>';
+  }
+
+  html += `</div>`;
+  return html;
+}
+  
 function renderFriday(today,dd){
   const done=FRIDAY_PLAN.filter((_,i)=>dd.rec[`fri-${i}`]).length;
   return `
