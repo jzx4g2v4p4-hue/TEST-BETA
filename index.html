@@ -5745,15 +5745,26 @@ function startFullKegelSession(today) {
       + '</div>';
   }
 
-  function tick() {
-    if (paused || phase === 'done') return;
-    timeLeft -= 0.1;
-    if (timeLeft <= 0) {
-      timeLeft = 0;
-      nextPhase();
+function tick() {
+  if (paused || phase === 'done') return;
+  timeLeft -= 0.1;
+  if (timeLeft <= 0) {
+    timeLeft = 0;
+    
+    // --- AUDIO COACH INJECTION ---
+    if (typeof AudioCoach !== 'undefined') {
+      if (phase === 'rest') {
+        AudioCoach.yellGetUp(); // Yells at you to get back to work
+      } else {
+        AudioCoach.playBeep('sine', 800, 0.3); // Standard boxing ding for other phases
+      }
     }
-    draw();
+    // -----------------------------
+    
+    nextPhase();
   }
+  draw();
+}
 
   window._kegelTogglePause = function() { paused = !paused; draw(); };
   window._kegelAbort = function() {
@@ -8630,6 +8641,89 @@ document.addEventListener('visibilitychange', () => {
 });
 keepScreenAwake();
 // ------------------------------
+  // ═══════════════════════════════════════════════════════════
+// ELITE AUDIO & TTS COACH
+// ═══════════════════════════════════════════════════════════
+const AudioCoach = {
+  ctx: null,
+  unlocked: false,
+  
+  init: function() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    // Apple/Android block audio until the user taps the screen. This invisible silent beep unlocks it.
+    if (!this.unlocked) {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      gain.gain.value = 0; // Silent
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.1);
+      
+      // Unlock Speech Synthesis
+      if ('speechSynthesis' in window) {
+        const msg = new SpeechSynthesisUtterance('');
+        window.speechSynthesis.speak(msg);
+      }
+      this.unlocked = true;
+      console.log("Elite Audio Coach: UNLOCKED.");
+    }
+  },
+  
+  // Piercing beep that plays over Spotify
+  playBeep: function(type = 'square', freq = 600, duration = 0.5) {
+    if (!this.ctx) this.init();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    gain.gain.setValueAtTime(1, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + duration);
+  },
+  
+  speak: function(text, isAggressive = false) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel(); // Interrupt whatever it's currently saying
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.rate = isAggressive ? 1.15 : 1.0;  // Talk slightly faster if aggressive
+    msg.pitch = isAggressive ? 0.8 : 1.0;  // Lower, more serious pitch
+    window.speechSynthesis.speak(msg);
+  },
+
+  // The aggressive rest-timer alarm
+  yellGetUp: function() {
+    this.playBeep('square', 600, 0.5); // Loud alarm beep
+    const quotes = [
+      "Time's up. Pick up the weight.",
+      "Rest is over. Move!",
+      "Get the fuck up, it's go time.",
+      "Stop sitting around. Back to work.",
+      "Time. Let's get it."
+    ];
+    const quote = quotes[Math.floor(Math.random() * quotes.length)];
+    // Wait for the beep to finish, then speak
+    setTimeout(() => this.speak(quote, true), 600);
+  },
+
+  // Read a combination or drill out loud
+  callDrill: function(drillName) {
+    this.playBeep('sine', 800, 0.2); // Short bell ding
+    setTimeout(() => this.speak(drillName, false), 300);
+  }
+};
+
+// Global unlock: The moment you tap *anywhere* in the app, the Audio Engine arms itself.
+document.addEventListener('touchstart', () => AudioCoach.init(), {once:true});
+document.addEventListener('click', () => AudioCoach.init(), {once:true});
 </script>
 </body>
 </html>
