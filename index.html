@@ -590,17 +590,24 @@ posture: [
 };
 
 function generateWorkout(group){
+
   const lib = EXERCISE_LIBRARY[group];
   if(!lib) return [];
-
+  // randomize exercises
   const shuffled = [...lib].sort(()=>Math.random()-0.5);
-  const selected = shuffled.slice(0,6);
-
-  return selected.map(ex=>({
-    n: ex.name,
-    s: ex.sets,
-    r: ex.reps
-  }));
+  const selected = [];
+  const used = new Set();
+  for(const ex of shuffled){
+    if(used.has(ex.name)) continue;
+    selected.push({
+      n: ex.name,
+      s: ex.sets || "3",
+      r: ex.reps || "10"
+    });
+    used.add(ex.name);
+    if(selected.length >= 6) break;
+  }
+  return selected;
 }
 };
 const FIGHTERS = {
