@@ -932,10 +932,11 @@ const FIGHTERS = {
 };
 
 
-
 // Body fix routines added to every workout day
 const BODY_FIX = [
+  {n:"Tongue Posture Hold (1 min)", detail:"Press entire tongue flat against the roof of the mouth. Breathe through nose. Core mewing fundamental.", type:"mewing"},
   {n:"Chin Tucks (10 × 5 sec holds)", detail:"Pull chin straight back — make a double chin. Hold 5 sec. Release. #1 tech neck fix. Do every hour at desk too.", type:"techneck"},
+  {n:"Jaw Relaxation Massage (30 sec)", detail:"Massage masseters while lips are closed but teeth are slightly apart. Prevents clenching.", type:"mewing"},
   {n:"Cat-Cow (10 slow reps)", detail:"Hands and knees. Arch fully (cow) then round fully (cat). Slow. Decompresses spine, relieves sciatic pressure.", type:"sciatica"},
   {n:"Piriformis Stretch (60 sec each side)", detail:"Sit in chair, cross right ankle over left knee, sit tall, lean forward gently. Deep burn in glute = sciatic nerve releasing.", type:"sciatica"},
   {n:"Hip Flexor Stretch (2 min each side)", detail:"Kneeling lunge, back knee down, sink hips forward and down. Tight hip flexors cause sciatica AND restrict sexual performance.", type:"mobility"},
@@ -944,6 +945,7 @@ const BODY_FIX = [
   {n:"Couch Stretch (2 min each side)", detail:"Back foot elevated on couch or bench, front foot forward, sink hips straight down. Best hip flexor stretch available.", type:"mobility"},
   {n:"Child's Pose (60 sec)", detail:"Sit back on heels, arms stretched forward, forehead to ground. Decompresses entire lower spine. Sciatica's enemy.", type:"sciatica"},
 ];
+
 
 const FRIDAY_PLAN = [
   {t:"20 min incline walk — easy conversational pace", d:"15% / 2.5mph. Blood flow only. Not a workout. Active recovery."},
@@ -1721,7 +1723,51 @@ function render(){
     });
   }
 }
+// ═══════════════════════════════════════════════════════════
+// AI GENERATOR
+// ═══════════════════════════════════════════════════════════
+function generateAIWorkout(ad) {
+  let pools = [];
+  if(!EXERCISE_LIBRARY || !EXERCISE_LIBRARY.back) return {name:"Fallback",type:"Rest",tag:"",warmup:"",cooldown:"",exercises:[]};
+  if (ad === 'MON' || ad === 'FRI') pools = [{lib: EXERCISE_LIBRARY.back, count: 3}, {lib: EXERCISE_LIBRARY.arms, count: 2}];
+  else if (ad === 'TUE') pools = [{lib: EXERCISE_LIBRARY.chest, count: 3}, {lib: EXERCISE_LIBRARY.shoulders, count: 2}];
+  else if (ad === 'WED') pools = [{lib: EXERCISE_LIBRARY.legs, count: 4}];
+  else if (ad === 'THU') pools = [{lib: EXERCISE_LIBRARY.arms, count: 3}, {lib: EXERCISE_LIBRARY.core, count: 2}];
+  
+  let exercises = [];
+  pools.forEach(p => {
+    let shuffled = [...p.lib].sort(() => 0.5 - Math.random());
+    let selected = shuffled.slice(0, p.count).map(ex => {
+      let sets = Math.floor(Math.random() * 3) + 3; // 3 to 5 sets
+      let repTargets = ["5-8 heavy", "10-12 strict", "15-20 burnout", "Max reps", "Myo-reps", "Drop set"];
+      let r = repTargets[Math.floor(Math.random() * repTargets.length)];
+      return { n: ex.name, s: sets, r: r + " — " + ex.notes };
+    });
+    exercises = exercises.concat(selected);
+  });
+  
+  return {
+    name: "🎲 AI SHOCK PROTOCOL",
+    type: "MUSCLE CONFUSION",
+    tag: "Randomized Sets, Reps, and Movements",
+    warmup: "5 min jump rope + dynamic arm/leg swings + 1 min plank",
+    cooldown: "Focus on the tightest muscles today. Hold stretches 60s each.",
+    exercises: exercises
+  };
+}
 
+function selectAIWorkout() {
+  const today = UI.activeDate;
+  const dd = getDD(today);
+  if (!dd.aiWorkout) {
+    dd.aiWorkout = generateAIWorkout(UI.activeDay);
+    saveDB();
+  }
+  selectEquip('ai_random');
+}
+// ═══════════════════════════════════════════════════════════
+// WORKOUT TAB
+// ═══════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════
 // WORKOUT TAB
 // ═══════════════════════════════════════════════════════════
@@ -1731,8 +1777,8 @@ function renderWorkoutTab(today,dd){
 
   // Day tabs row
   const dayTabsHTML=`
-    ${renderWorkoutHomeHeader(today,dd)}
-    ${renderCardinalAssumptions()}
+    ${typeof renderWorkoutHomeHeader === 'function' ? renderWorkoutHomeHeader(today,dd) : ''}
+    ${typeof renderCardinalAssumptions === 'function' ? renderCardinalAssumptions() : ''}
     <div class="day-tabs">
       ${ALL_DAYS.map(d=>{
         let cls='day-tab';
@@ -1747,23 +1793,15 @@ function renderWorkoutTab(today,dd){
   if(ad==='SAT') return dayTabsHTML + renderSaturday(today,dd);
   if(ad==='SUN') return dayTabsHTML + renderSunday(today,dd);
 
-  // FRI optional
-  const isFriOptional = (ad==='FRI');
-
-  // MON–FRI workout days
   const dayIdx=['MON','TUE','WED','THU','FRI'].indexOf(ad);
   if(dayIdx<0) return dayTabsHTML;
- // Handle Specialized Module Override First
-  if(UI.activeSpecial){
-    return renderSpecialModuleTab(today, dd, UI.activeSpecial, dayTabsHTML);
-  }
-// Workout Configuration Wizard
+
+  // ─── COMMAND CENTER WIZARD ───
   if(!equip){
     let stats = JSON.parse(localStorage.getItem("weeklyStats")) || {pull:0,push:0,legs:0,arms:0};
     const recommendation = typeof getWorkoutRecommendation === 'function' ? getWorkoutRecommendation() : getDayType(todayDow());
     const missed = typeof getMissedWorkout === 'function' ? getMissedWorkout() : null;
 
-    // Equipment options
     const equipOptions=[
       {k:'gym',      icon:'🏋️', label:'FULL GYM'},
       {k:'bowflex',  icon:'🏠', label:'BOWFLEX'},
@@ -1782,11 +1820,21 @@ function renderWorkoutTab(today,dd){
     const recDay = targetMap[recommendation] || 'MON';
     const missedDay = missed ? (targetMap[missed] || 'MON') : null;
 
-    return `
+    return dayTabsHTML + `
       <div style="padding:16px">
         <div style="text-align:center;margin-bottom:24px">
           <div style="font-size:11px;letter-spacing:3px;color:var(--text3);font-family:Impact,sans-serif">${dateLabel(today)}</div>
           <div style="font-size:24px;font-family:Impact,sans-serif;color:var(--cyan);letter-spacing:2px;margin-top:4px">WORKOUT CONFIGURATION</div>
+        </div>
+
+        <div style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:rgba(10,20,40,0.8);border:1px solid var(--border2);font-family:Impact,sans-serif;font-size:12px;text-align:center">
+          <div style="font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px;">WEEKLY BALANCE</div>
+          <div style="display:flex;justify-content:space-around;color:#fff">
+            <div>Pull ${stats.pull>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
+            <div>Push ${stats.push>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
+            <div>Legs ${stats.legs>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
+            <div>Arms ${stats.arms>0?'<span style="color:#00ff88">✓</span>':'❌'}</div>
+          </div>
         </div>
 
         <div style="margin-bottom:24px;padding:16px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,255,136,0.05));border:1px solid rgba(0,212,255,0.3);border-radius:14px;">
@@ -1805,9 +1853,7 @@ function renderWorkoutTab(today,dd){
           
           <div style="font-size:10px;color:var(--text3);margin:16px 0 8px">OR OVERRIDE TARGET MUSCLE:</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
-            ${[
-              {d:'MON', l:'PULL'},{d:'TUE', l:'PUSH'},{d:'WED', l:'LEGS'},{d:'THU', l:'ARMS'}
-            ].map(m => `
+            ${[{d:'MON', l:'PULL'},{d:'TUE', l:'PUSH'},{d:'WED', l:'LEGS'},{d:'THU', l:'ARMS'}].map(m => `
               <button onclick="switchDay('${m.d}')" style="padding:10px 4px;background:${ad===m.d?'var(--cyan)':'var(--card)'};border:1px solid ${ad===m.d?'var(--cyan)':'#333'};border-radius:8px;color:${ad===m.d?'#000':'#fff'};font-family:Impact,sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s">
                 ${m.l}
               </button>
@@ -1815,27 +1861,41 @@ function renderWorkoutTab(today,dd){
           </div>
         </div>
 
-        <div style="padding:16px;background:rgba(10,18,30,0.8);border:1px solid rgba(255,255,255,0.05);border-radius:14px;">
+        <div style="padding:16px;background:rgba(10,18,30,0.8);border:1px solid rgba(255,255,255,0.05);border-radius:14px;margin-bottom:16px">
           <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif;margin-bottom:12px">STEP 2: SELECT EQUIPMENT</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${btnHTML}</div>
         </div>
+
+        <button onclick="selectAIWorkout()" style="width:100%;padding:18px;background:linear-gradient(90deg,#ff0055,#ff8c00);border:1px solid rgba(255,255,255,0.2);border-radius:14px;color:#fff;font-family:Impact,sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:0 0 20px rgba(255,0,85,0.4);display:flex;align-items:center;justify-content:center;gap:10px">
+          <span>🎲</span> AI SHOCK RANDOMIZER
+        </button>
+
       </div>
     `;
   }
 
+  // ─── WORKOUT GENERATION (4-PHASES) ───
+  let day, equipData, equipColor, exKey;
+  if(equip === 'ai_random') {
+    if (!dd.aiWorkout) dd.aiWorkout = generateAIWorkout(ad);
+    day = dd.aiWorkout;
+    equipData = {label: '🎲 AI SHOCK'};
+    equipColor = '#ff0055';
+    exKey = 'ai_random-'+dayIdx;
+  } else {
+    equipData = FIGHTERS[equip];
+    day = equipData.days[dayIdx];
+    equipColor = equipData.color;
+    exKey = equip+'-'+dayIdx;
+  }
 
-  // Equipment selected — get the workout
-  const equipData = FIGHTERS[equip];
-  const day = equipData.days[dayIdx];
-  const equipColor = equipData.color;
-  const exKey = equip+'-'+dayIdx;
   const exDoneSelected=day.exercises.filter((_,i)=>dd.ex[exKey+'-'+i]).length;
-  const exDone=countCompletedExercisesAnyEquip(dd,dayIdx);
+  const exDone = equip === 'ai_random' ? exDoneSelected : countCompletedExercisesAnyEquip(dd,dayIdx);
   const bfDone=BODY_FIX.filter((_,i)=>dd.bf['bf-'+dayIdx+'-'+i]).length;
   const minReq=Math.min(day.exercises.length,DB.minExercises||5);
   const totalItems=minReq+BODY_FIX.length;
   const pct=Math.min(100,Math.round((Math.min(exDone,minReq)+bfDone)/totalItems*100));
-  const workoutCounted=Math.min(exDone,minReq)>=minReq;;
+  const workoutCounted=Math.min(exDone,minReq)>=minReq;
 
   return dayTabsHTML + `
     <div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
@@ -1843,14 +1903,12 @@ function renderWorkoutTab(today,dd){
         <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">${day.type}</div>
         <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:${equipColor}">${day.name}</div>
         <div style="font-size:11px;color:#666;margin-top:2px">${day.tag}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:3px">${exDoneSelected} done on this setup · ${exDone} total across all setups</div>
       </div>
       <button onclick="selectEquip(null)" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">${equipData.label}<br><span style="color:var(--text3);font-size:9px">TAP TO CHANGE</span></button>
     </div>
 
     <div class="section-lbl" style="color:#ffcc00; padding:0 20px; margin-top:16px;">🟡 PHASE 1: WARM-UP</div>
     <div class="info-box warm" style="cursor:pointer" onclick="toggleWarmup('${today}','wu-${equip}-${dayIdx}')">
-
       <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'#333'};background:${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
         ${dd.w['wu-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
       </div>
@@ -1867,104 +1925,10 @@ function renderWorkoutTab(today,dd){
       <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${pct}%;background:${workoutCounted?'#00ff88':equipColor}"></div></div>
     </div>
 
-    ${renderRestBar()}
+    ${typeof renderRestBar === 'function' ? renderRestBar() : ''}
 
-    <div style="margin:10px 20px 14px;background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-        <div style="font-size:11px;color:#666">Workout validation</div>
-        <div style="font-size:11px;color:${workoutCounted?'#00ff88':'#ff6b35'}">${workoutCounted?'Minimum met — counts for weekly score':'Need '+minReq+' completed exercises to count'}</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button onclick="submitWorkout('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='completed')?'#003d00':'rgba(0,60,0,0.2)'};border:1.5px solid #00ff88;border-radius:8px;color:#00ff88;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x2705; I WORKED OUT</button>
-        <button onclick="showOfficeModal('${today}',${dayIdx},'work')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-work')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x26A0; Can't make it &mdash; work</button>
-        <button onclick="showOfficeModal('${today}',${dayIdx},'school')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-school')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x26A0; Can't make it &mdash; school</button>
-        <button onclick="showLazyModal('${today}',${dayIdx})" style="padding:8px 10px;background:rgba(255,45,85,0.12);border:1.5px solid #ff2d55;border-radius:8px;color:#ff2d55;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x1F534; I'M A LAZY LITTLE BITCH</button>
-        <button onclick="showSickModal('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='sick')?'rgba(0,230,200,0.18)':'rgba(0,230,200,0.06)'};border:1px solid rgba(0,230,200,0.4);border-radius:8px;color:#00e6c8;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x1F912; I'M SICK</button>
-      </div>
-      ${(function(){
-        var st = dd.rec&&dd.rec['workout-status-'+dayIdx];
-        var labels = {'completed':'&#x2705; Logged — full workout','completed-full-circuit':'&#x2705; Logged — 12-min circuit','completed-bare-minimum':'&#x26A1; Logged — bare minimum','completed-emergency-3min':'&#x1F6A8; Logged — 3-min emergency','missed-work':'&#x26A0; Excused — work commitment','missed-school':'&#x26A0; Excused — school commitment','sick':'&#x1F912; Logged — sick day rest','skipped-lazy':'&#x1F6AE; Skipped — no excuse'};
-        if(!st) return '<div style="font-size:10px;color:#555;margin-top:6px">Not yet logged today</div>';
-        var c = st.startsWith('completed')||st==='completed'?'#00ff88':st==='sick'?'#00e6c8':st.startsWith('missed')?'#ffcc00':'#ff4444';
-        return '<div style="font-size:10px;color:'+c+';margin-top:6px;font-family:Impact,sans-serif;letter-spacing:1px">'+(labels[st]||st)+'</div>';
-      })()}
-    </div>
     <div class="ex-section" id="ex-section-main">
-
-${(()=>{
-let stats = JSON.parse(localStorage.getItem("weeklyStats")) || {
-pull:0,
-push:0,
-legs:0,
-arms:0
-}
-
-function mark(v){ return v > 0 ? "✓" : "❌" }
-
-return `
-<div style="
-margin:0 0 12px;
-padding:10px 12px;
-border-radius:10px;
-background:rgba(10,20,40,0.8);
-border:1px solid var(--border2);
-font-family:Impact,sans-serif;
-font-size:12px;">
-<div style="font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px;">
-WEEKLY BALANCE
-</div>
-<div style="display:flex;gap:8px;">
-<div style="flex:1">Pull ${mark(stats.pull)}</div>
-<div style="flex:1">Push ${mark(stats.push)}</div>
-<div style="flex:1">Legs ${mark(stats.legs)}</div>
-<div style="flex:1">Arms ${mark(stats.arms)}</div>
-</div>
-</div>
-`
-})()}
-
-${(()=>{
-let html = ""
-
-const missed = getMissedWorkout()
-
-if(missed){
-html += `
-<div style="
-margin:0 0 10px;
-padding:12px;
-border-radius:10px;
-background:#2a1a00;
-border:1px solid #ffcc00;
-color:#ffcc00;
-font-weight:bold;
-text-align:center;
-font-size:13px;">
-⚠️ You missed ${missed} yesterday.<br>
-Make it up today?
-</div>
-`
-}
-const recommendation = getWorkoutRecommendation()
-html += `
-<div style="
-margin:10px 0 14px;
-padding:14px;
-border-radius:12px;
-background:linear-gradient(135deg,#00ff88,#00d4ff);
-color:#000;
-font-weight:bold;
-text-align:center;
-font-size:16px;
-box-shadow:0 0 12px rgba(0,212,255,0.35);">
-🔥 YOU SEXY MOTHERFUCKING BEAST WHAT ARE WE HITTING TODAY?<br>
-${recommendation}
-</div>
-`
-return html
-})()}
-    
-<div class="section-lbl" style="color:#ff4444; margin-top:20px;">🔴 PHASE 2: LIFTING REGIMEN</div>
+      <div class="section-lbl" style="color:#ff4444; margin-top:20px;">🔴 PHASE 2: LIFTING REGIMEN</div>
       ${(()=>{
         var allExercises = day.exercises.map(function(ex,i){return {ex:ex,i:i};});
         var doneExes = allExercises.filter(function(o){return !!dd.ex[exKey+'-'+o.i];});
@@ -1980,9 +1944,8 @@ return html
           var isTimed=['battle rope','battle ropes','sled push','sled pull','farmer carry','farmer walk','jump rope','assault bike','rower','ski erg'].some(function(k){return ex.n.toLowerCase().includes(k);});
           var timedVal=(dd.w&&dd.w[key+'-time'])||'';
           var isSuperset = ex.n.includes(' + ') || ex.n.toLowerCase().includes('superset');
-          var supersetParts = isSuperset
-            ? ex.n.replace(/\s*\(superset.*?\)/i,'').split(' + ').map(function(p){return p.trim();})
-            : [ex.n];
+          var supersetParts = isSuperset ? ex.n.replace(/\s*\(superset.*?\)/i,'').split(' + ').map(function(p){return p.trim();}) : [ex.n];
+          
           function buildSummary(partIdx){
             var rows=[];
             for(var s=0;s<ex.s;s++){var sw=dd.w[key+'-p'+partIdx+'-s'+s];if(sw)rows.push('S'+(s+1)+':'+sw+'lb');}
@@ -1995,17 +1958,16 @@ return html
           html += '<div class="ex-top">';
           html += '<div class="ex-check '+(isDone?'checked ':'')+(isTimed?'timed-check':'')+'" onclick="toggleEx(\''+ key +'\',\'ex\')">'+'</div>';
           html += '<div class="ex-info" onclick="toggleWeight(\''+ key +'\')">' ;
-          html += '<div class="ex-name">'+weightProgressAlert(equip,dayIdx,i)+(isSuperset?'&#x1F501; SUPERSET':'')+( isSuperset?'<br>':'')+ supersetParts.join('<br>+ ')+'</div>';
+          html += '<div class="ex-name">'+(typeof weightProgressAlert==='function'?weightProgressAlert(equip,dayIdx,i):'')+(isSuperset?'&#x1F501; SUPERSET':'')+( isSuperset?'<br>':'')+ supersetParts.join('<br>+ ')+'</div>';
           if(isTimed){
             html += '<div class="ex-note" style="font-size:11px;color:'+(timedVal?'var(--accent)':'#555')+'">' + (timedVal ? '&#x23F1; '+timedVal+'s logged' : ex.s+' sets &middot; '+ex.r)+'</div>';
           } else {
             html += '<div class="ex-note" style="font-size:11px;color:'+(allWeightSummary?'var(--accent)':'#555')+ '">' + (allWeightSummary||ex.s+' sets &middot; tap to log weights')+'</div>';
           }
-          html += '</div>'; // ex-info
+          html += '</div>';
           html += '<div class="ex-reps-badge">'+(isTimed?'&#x23F1;':ex.s+'&times;'+ex.r)+'</div>';
-          html += '</div>'; // ex-top
+          html += '</div>';
 
-          // Weight/time log panel
           if(isTimed){
             html += '<div class="ex-weight '+(isOpen?'open':'')+'">' ;
             html += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG TIME PER SET</div>';
@@ -2048,10 +2010,10 @@ return html
                 html += '</div>';
               }
             }
-            html += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved &middot; view in calendar</div>';
+            html += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved</div>';
             html += '</div>';
           }
-          html += '</div>'; // ex-item
+          html += '</div>';
           return html;
         }
 
@@ -2066,39 +2028,25 @@ return html
           }
           html += remainExes.map(renderSingleEx).join('');
         }
-      if(allDoneNow){
 
-  // record workout for smart engine
- saveLastWorkout(day.type)
-recordWorkout(day.type)
-
-let stats = JSON.parse(localStorage.getItem("weeklyStats")) || {
-pull:0,
-push:0,
-legs:0,
-arms:0
-}
-
-let key = day.type.toLowerCase()
-if(key.includes("pull")) key = "pull"
-else if(key.includes("push")) key = "push"
-else if(key.includes("leg")) key = "legs"
-else if(key.includes("arm")) key = "arms"
-if(!stats[key]) stats[key] = 0
-stats[key]++
-
-localStorage.setItem("weeklyStats", JSON.stringify(stats))
-
-renderWeeklyTracker()
-
-  html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid rgba(0,255,136,0.3);border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">&#x1F3C6;</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:var(--green)">WORKOUT COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fighter score +5 · Every rep counts</div></div>';
-  setTimeout(function(){if(typeof launchConfetti==='function')launchConfetti();},100);
-}
+        if(allDoneNow){
+          if(typeof saveLastWorkout==='function') saveLastWorkout(day.type);
+          if(typeof recordWorkout==='function') recordWorkout(day.type);
+          let stats = JSON.parse(localStorage.getItem("weeklyStats")) || {pull:0,push:0,legs:0,arms:0};
+          let key = day.type.toLowerCase()
+          if(key.includes("pull")) key = "pull"; else if(key.includes("push")) key = "push"; else if(key.includes("leg")) key = "legs"; else if(key.includes("arm")) key = "arms";
+          if(!stats[key]) stats[key] = 0;
+          stats[key]++;
+          localStorage.setItem("weeklyStats", JSON.stringify(stats));
+          
+          html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid rgba(0,255,136,0.3);border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">&#x1F3C6;</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:var(--green)">WORKOUT COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fighter score +5 · Every rep counts</div></div>';
+          setTimeout(function(){if(typeof launchConfetti==='function')launchConfetti();},100);
+        }
         return html;
       })()}
     </div>
 
-<div class="divider"></div>
+    <div class="divider"></div>
 
     <div class="section-lbl" style="color:#00D4FF; padding:0 20px;">🔵 PHASE 3: MARTIAL ARTS ROUNDS</div>
     ${typeof renderWorkoutComboBlock === 'function' ? renderWorkoutComboBlock(today, dd, dayIdx) : ''}
@@ -2119,7 +2067,7 @@ renderWeeklyTracker()
                 <div class="ex-name">${bf.n}</div>
                 <div class="ex-note" style="color:#6699ff88">${bf.detail}</div>
               </div>
-              <div class="ex-reps-badge blue">${bf.type==='techneck'?'🖥️':bf.type==='sciatica'?'⚡':bf.type==='flexibility'?'🦵':'🦵'}</div>
+              <div class="ex-reps-badge blue">${bf.type==='techneck'?'🖥️':bf.type==='sciatica'?'⚡':bf.type==='flexibility'?'🦵':bf.type==='mewing'?'🤫':'🦵'}</div>
             </div>
           </div>`;
       }).join('')}
@@ -2128,7 +2076,6 @@ renderWeeklyTracker()
     ${typeof renderWorkoutKegelBlock === 'function' ? renderWorkoutKegelBlock(today, dd) : ''}
 
     <div class="info-box cool" style="margin-top:14px;cursor:pointer" onclick="toggleWarmup('${today}','cd-${equip}-${dayIdx}')">
-    
       <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'#333'};background:${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
         ${dd.w['cd-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
       </div>
@@ -2136,7 +2083,7 @@ renderWeeklyTracker()
       <div><div class="box-lbl">COOL-DOWN · TAP TO CHECK OFF</div>
     <div class="box-txt" style="color:${dd.w['cd-'+equip+'-'+dayIdx]?'#444':'#aa88ff'};${dd.w['cd-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.cooldown}</div></div>
     </div>
-    ${renderStretchTimers(day.cooldown)}
+    ${typeof renderStretchTimers === 'function' ? renderStretchTimers(day.cooldown) : ''}
 
     <div style="margin:14px 20px 0;background:#0d1a12;border-radius:10px;border:1px solid #1a3a1a;overflow:hidden">
       <div style="padding:12px 16px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center">
@@ -2165,76 +2112,9 @@ renderWeeklyTracker()
             </div>
           </div>`;
       }).join('')}
-      <div style="padding:10px 16px;font-size:11px;color:var(--text3);font-style:italic">
-        💡 On rest days drink your shake in the morning instead
-      </div>
     </div>
   `;
 }
-
-function renderSpecialModuleTab(today, dd, type, dayTabsHTML) {
-  const lib = EXERCISE_LIBRARY[type];
-  if(!lib) return dayTabsHTML + '<div style="padding:20px;color:red;text-align:center;">Library not found for: ' + type + '. Make sure EXERCISE_LIBRARY is updated.</div><button onclick="UI.activeSpecial=null;render()" style="margin:20px;padding:12px;width:calc(100% - 40px);background:var(--card);color:#fff;border:1px solid #333;border-radius:8px">GO BACK</button>';
-  
-  const labels = {
-    conditioning: {n:'FIGHTER CONDITIONING', c:'#ff4444', emoji:'🥊', t:'Cardio & Explosive Power'},
-    bjj: {n:'BJJ SOLO DRILLS', c:'#6699ff', emoji:'🥋', t:'Mat Movements & Hip Mobility'},
-    flexibility: {n:'FLEXIBILITY & SPLITS', c:'#aa88ff', emoji:'🧘‍♂️', t:'Deep Mobility Progression'},
-    mewing: {n:'MEWING REGIMEN', c:'#00D4FF', emoji:'🤫', t:'Jaw & Posture Alignment'},
-  };
-  const config = labels[type];
-  const exKey = 'spec-'+type;
-  
-  const exDone = lib.filter((_,i)=>dd.ex && dd.ex[exKey+'-'+i]).length;
-  const pct = Math.round(exDone/lib.length*100);
-
-  let html = dayTabsHTML + `
-    <div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">${config.emoji} SPECIALIZED MODULE</div>
-        <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:${config.c}">${config.n}</div>
-        <div style="font-size:11px;color:#666;margin-top:2px">${config.t}</div>
-      </div>
-      <button onclick="UI.activeSpecial=null;render()" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">CLOSE</button>
-    </div>
-
-    <div class="prog-bar-wrap">
-      <div class="prog-bar-labels"><span>PROGRESS</span><span style="color:${config.c}">${exDone}/${lib.length}</span></div>
-      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${pct}%;background:${config.c}"></div></div>
-    </div>
-    
-    <div class="ex-section">
-  `;
-
-  lib.forEach((ex, i) => {
-    const key = exKey+'-'+i;
-    const isDone = dd.ex && !!dd.ex[key];
-    
-    html += `
-      <div class="ex-item ${isDone?'done ':''}" style="${isDone?'opacity:0.7;border-color:'+config.c+'44;background:rgba(0,0,0,0.4)':''}">
-        <div class="ex-top" onclick="toggleEx('${key}','ex')">
-          <div class="ex-check ${isDone?'checked ':''}" style="${isDone?'background:'+config.c+';border-color:'+config.c:''}"></div>
-          <div class="ex-info">
-            <div class="ex-name" style="${isDone?'color:var(--text3)':''}">${ex.name}</div>
-            <div class="ex-note" style="color:var(--text3)">${ex.notes}</div>
-          </div>
-          <div class="ex-reps-badge" style="color:${config.c}">${ex.sets} × ${ex.reps}</div>
-        </div>
-      </div>
-    `;
-  });
-
-  if (exDone === lib.length && lib.length > 0) {
-    html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid '+config.c+'66;border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">🔥</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:'+config.c+'">MODULE COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Discipline secured.</div></div>';
-  }
-
-  html += `</div>`;
-  return html;
-}
-
-// ═══════════════════════════════════════════════════════════
-// FRI / SAT / SUN VIEWS
-// ═══════════════════════════════════════════════════════════
 function renderFriday(today,dd){
   const done=FRIDAY_PLAN.filter((_,i)=>dd.rec[`fri-${i}`]).length;
   return `
