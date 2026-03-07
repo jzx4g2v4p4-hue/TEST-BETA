@@ -1723,25 +1723,23 @@ function render(){
     });
   }
 }
-/ ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // WORKOUT GENERATORS (STANDARD & AI)
 // ═══════════════════════════════════════════════════════════
 function generateStandardWorkout(ad, equip) {
-  // 1. Filter the master library based on the equipment you selected
   let allowedEquip = [];
   if (equip === 'bodyweight') allowedEquip = ['bodyweight', 'pullup bar', 'box', 'wall', 'none'];
   else if (equip === 'bands') allowedEquip = ['bodyweight', 'pullup bar', 'bands', 'rope', 'none'];
   else if (equip === 'bowflex') allowedEquip = ['bodyweight', 'pullup bar', 'dumbbells', 'bench', 'none'];
-  else allowedEquip = ['all']; // Full Gym gets everything
+  else allowedEquip = ['all'];
 
   function filterLib(lib) {
      if(!lib) return [];
      if(allowedEquip[0] === 'all') return lib;
-     let filtered = lib.filter(ex => allowedEquip.some(eq => (ex.equipment||'').toLowerCase().includes(eq)));
-     return filtered.length > 0 ? filtered : lib.slice(0, 3); // Fallback so it never breaks
+     let filtered = lib.filter(ex => allowedEquip.some(eq => ((ex.equipment||'').toLowerCase().includes(eq))));
+     return filtered.length > 0 ? filtered : lib.slice(0, 3);
   }
 
-  // 2. Select muscle groups based on the target day
   let pools = [];
   if (ad === 'MON') pools = [{lib: filterLib(EXERCISE_LIBRARY.back), count: 4}, {lib: filterLib(EXERCISE_LIBRARY.arms), count: 3}];
   else if (ad === 'TUE') pools = [{lib: filterLib(EXERCISE_LIBRARY.chest), count: 4}, {lib: filterLib(EXERCISE_LIBRARY.shoulders), count: 3}];
@@ -1749,11 +1747,10 @@ function generateStandardWorkout(ad, equip) {
   else if (ad === 'THU') pools = [{lib: filterLib(EXERCISE_LIBRARY.arms), count: 4}, {lib: filterLib(EXERCISE_LIBRARY.core), count: 3}];
   else pools = [{lib: filterLib(EXERCISE_LIBRARY.back), count: 3}, {lib: filterLib(EXERCISE_LIBRARY.chest), count: 3}]; 
 
-  // 3. Build the workout
   let exercises = [];
   pools.forEach(p => {
      let selected = p.lib.slice(0, p.count).map(ex => {
-         return { n: ex.name, s: ex.sets || 4, r: ex.reps + " — " + ex.notes };
+         return { n: ex.name||"Exercise", s: ex.sets || 4, r: (ex.reps||"10") + " — " + (ex.notes||"") };
      });
      exercises = exercises.concat(selected);
   });
@@ -1762,7 +1759,7 @@ function generateStandardWorkout(ad, equip) {
   return {
     name: dayNames[ad] || "WORKOUT",
     type: "STANDARD REGIMEN",
-    tag: "Equipment: " + equip.toUpperCase(),
+    tag: "Equipment: " + (equip||'').toUpperCase(),
     warmup: "3 mins jump rope + dynamic arm swings + hip openers",
     cooldown: "Hold deep stretches for 60s. Control breathing.",
     exercises: exercises
@@ -1772,7 +1769,6 @@ function generateStandardWorkout(ad, equip) {
 function generateAIWorkout(ad) {
   if(!EXERCISE_LIBRARY || !EXERCISE_LIBRARY.back) return {name:"Fallback",type:"Rest",tag:"",warmup:"",cooldown:"",exercises:[]};
 
-  // 1. Core Muscle Group
   let musclePools = [];
   if (ad === 'MON' || ad === 'FRI') musclePools = [{lib: EXERCISE_LIBRARY.back, count: 3}, {lib: EXERCISE_LIBRARY.arms, count: 2}];
   else if (ad === 'TUE') musclePools = [{lib: EXERCISE_LIBRARY.chest, count: 3}, {lib: EXERCISE_LIBRARY.shoulders, count: 2}];
@@ -1780,26 +1776,22 @@ function generateAIWorkout(ad) {
   else if (ad === 'THU') musclePools = [{lib: EXERCISE_LIBRARY.arms, count: 3}, {lib: EXERCISE_LIBRARY.core, count: 2}];
   else musclePools = [{lib: EXERCISE_LIBRARY.legs, count: 3}];
 
-  // 2. FORCE SELF-DEFENSE & MMA CONDITIONING INTO EVERY AI WORKOUT
-  musclePools.push({lib: EXERCISE_LIBRARY.conditioning, count: 2}); // 2 Brutal cardio/conditioning rounds
-  musclePools.push({lib: EXERCISE_LIBRARY.bjj, count: 2}); // 2 Tactical ground/movement drills
+  musclePools.push({lib: EXERCISE_LIBRARY.conditioning, count: 2});
+  musclePools.push({lib: EXERCISE_LIBRARY.bjj, count: 2});
 
   let exercises = [];
   musclePools.forEach(p => {
     if(!p.lib) return;
     let shuffled = [...p.lib].sort(() => 0.5 - Math.random());
     let selected = shuffled.slice(0, p.count).map(ex => {
-      let sets = Math.floor(Math.random() * 2) + 3; // 3 to 4 sets
+      let sets = Math.floor(Math.random() * 2) + 3;
       let repTargets = ["5-8 heavy", "10-12 strict", "15-20 burnout", "Max reps", "Drop set", "Explosive speed"];
       let r = repTargets[Math.floor(Math.random() * repTargets.length)];
-      
-      // If it's a fighter conditioning or BJJ move, make it a 1-minute combat round
       if (p.lib === EXERCISE_LIBRARY.conditioning || p.lib === EXERCISE_LIBRARY.bjj) {
          r = "1 min AMRAP (As Many Reps As Possible)";
          sets = 3;
       }
-      
-      return { n: (p.lib === EXERCISE_LIBRARY.bjj ? "🥋 " : (p.lib === EXERCISE_LIBRARY.conditioning ? "🥊 " : "")) + ex.name, s: sets, r: r + " — " + ex.notes };
+      return { n: (p.lib === EXERCISE_LIBRARY.bjj ? "🥋 " : (p.lib === EXERCISE_LIBRARY.conditioning ? "🥊 " : "")) + (ex.name||"Drill"), s: sets, r: r + " — " + (ex.notes||"") };
     });
     exercises = exercises.concat(selected);
   });
@@ -1820,14 +1812,20 @@ function selectAIWorkout() {
   dd.aiWorkout = generateAIWorkout(UI.activeDay); 
   selectEquip('ai_random'); 
 }
+
 // ═══════════════════════════════════════════════════════════
 // WORKOUT TAB
 // ═══════════════════════════════════════════════════════════
 function renderWorkoutTab(today,dd){
+  // ULTRA-SAFE DATA REPAIR: Forces objects to exist so older saved days never crash the engine
+  if (!dd.ex) dd.ex = {};
+  if (!dd.w) dd.w = {};
+  if (!dd.bf) dd.bf = {};
+  if (!dd.rec) dd.rec = {};
+
   const ad=UI.activeDay;
   const equip=UI.activeEquip;
 
-  // Day tabs row
   const dayTabsHTML=`
     ${typeof renderWorkoutHomeHeader === 'function' ? renderWorkoutHomeHeader(today,dd) : ''}
     ${typeof renderCardinalAssumptions === 'function' ? renderCardinalAssumptions() : ''}
@@ -1848,7 +1846,6 @@ function renderWorkoutTab(today,dd){
   const dayIdx=['MON','TUE','WED','THU','FRI'].indexOf(ad);
   if(dayIdx<0) return dayTabsHTML;
 
-  // ─── COMMAND CENTER WIZARD ───
   if(!equip){
     let stats = JSON.parse(localStorage.getItem("weeklyStats")) || {pull:0,push:0,legs:0,arms:0};
     const recommendation = typeof getWorkoutRecommendation === 'function' ? getWorkoutRecommendation() : getDayType(todayDow());
@@ -1921,22 +1918,19 @@ function renderWorkoutTab(today,dd){
         <button onclick="selectAIWorkout()" style="width:100%;padding:18px;background:linear-gradient(90deg,#ff0055,#ff8c00);border:1px solid rgba(255,255,255,0.2);border-radius:14px;color:#fff;font-family:Impact,sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:0 0 20px rgba(255,0,85,0.4);display:flex;align-items:center;justify-content:center;gap:10px">
           <span>🎲</span> AI SHOCK RANDOMIZER
         </button>
-
       </div>
     `;
   }
-// ─── WORKOUT GENERATION (4-PHASES) ───
+
   let day, equipData, equipColor, exKey;
-  
   if(equip === 'ai_random') {
-    if (!dd.aiWorkout || dd.aiWorkout.exercises.length < 8) dd.aiWorkout = generateAIWorkout(ad);
+    if (!dd.aiWorkout || !dd.aiWorkout.exercises || dd.aiWorkout.exercises.length < 8) dd.aiWorkout = generateAIWorkout(ad);
     day = dd.aiWorkout;
     equipData = {label: '🎲 AI SHOCK'};
     equipColor = '#ff0055';
     exKey = 'ai_random-'+dayIdx;
   } else {
-    // Dynamically build the standard workout from the Master Library using selected equipment!
-    if(!dd['std_'+equip+'_'+ad]) dd['std_'+equip+'_'+ad] = generateStandardWorkout(ad, equip);
+    if(!dd['std_'+equip+'_'+ad] || !dd['std_'+equip+'_'+ad].exercises) dd['std_'+equip+'_'+ad] = generateStandardWorkout(ad, equip);
     day = dd['std_'+equip+'_'+ad];
     
     const eqColors = {gym:'#00ff88', bowflex:'#ff6b35', bands:'#ffcc00', bodyweight:'#6699ff'};
@@ -1945,20 +1939,22 @@ function renderWorkoutTab(today,dd){
     exKey = equip+'-'+dayIdx;
   }
 
-  // FIXED: Removed undefined functions that caused the blue screen crash
-  const exDone = day.exercises.filter((_,i) => dd.ex[exKey+'-'+i]).length;
-  const bfDone = BODY_FIX.filter((_,i) => dd.bf['bf-'+dayIdx+'-'+i]).length;
-  const minReq = Math.min(day.exercises.length, 5); // Defaults to 5 required lifts
-  const totalItems = minReq + BODY_FIX.length;
-  const pct = Math.min(100, Math.round((Math.min(exDone, minReq) + bfDone) / totalItems * 100));
-  const workoutCounted = exDone >= minReq
+  const safeExercises = day.exercises || [];
+  const safeBodyFix = typeof BODY_FIX !== 'undefined' ? BODY_FIX : [];
+
+  const exDone = safeExercises.filter((_,i) => dd.ex[exKey+'-'+i]).length;
+  const bfDone = safeBodyFix.filter((_,i) => dd.bf['bf-'+dayIdx+'-'+i]).length;
+  const minReq = Math.min(safeExercises.length, 5); 
+  const totalItems = minReq + safeBodyFix.length;
+  const pct = totalItems > 0 ? Math.min(100, Math.round((Math.min(exDone, minReq) + bfDone) / totalItems * 100)) : 0;
+  const workoutCounted = exDone >= minReq;
 
   return dayTabsHTML + `
     <div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
       <div>
-        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">${day.type}</div>
-        <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:${equipColor}">${day.name}</div>
-        <div style="font-size:11px;color:#666;margin-top:2px">${day.tag}</div>
+        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">${day.type||'WORKOUT'}</div>
+        <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:${equipColor}">${day.name||'Regimen'}</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">${day.tag||''}</div>
       </div>
       <button onclick="selectEquip(null)" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">${equipData.label}<br><span style="color:var(--text3);font-size:9px">TAP TO CHANGE</span></button>
     </div>
@@ -1969,15 +1965,14 @@ function renderWorkoutTab(today,dd){
         ${dd.w['wu-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
       </div>
       <span class="box-icon">🔥</span>
-      <div><div class="box-lbl">WARM-UP · TAP TO CHECK OFF</div><div class="box-txt" style="color:${dd.w['wu-'+equip+'-'+dayIdx]?'#444':'#00ff88'};${dd.w['wu-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.warmup}</div></div>
+      <div><div class="box-lbl">WARM-UP · TAP TO CHECK OFF</div><div class="box-txt" style="color:${dd.w['wu-'+equip+'-'+dayIdx]?'#444':'#00ff88'};${dd.w['wu-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.warmup||''}</div></div>
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 20px;font-size:10px;color:#555">
-      <span>REQUIRED: <span style="color:var(--accent);font-family:Impact,sans-serif">${minReq}/${day.exercises.length}</span></span>
-      <div style="display:flex;gap:4px"><button onclick="event.stopPropagation();setMinEx(${Math.max(3,minReq-1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">−</button><button onclick="event.stopPropagation();setMinEx(${Math.min(day.exercises.length,minReq+1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">+</button></div>
+      <span>REQUIRED: <span style="color:var(--accent);font-family:Impact,sans-serif">${minReq}/${safeExercises.length}</span></span>
     </div>
     <div class="prog-bar-wrap">
-     <div class="prog-bar-labels"><span>EXERCISES ${Math.min(exDone,minReq)}/${minReq} &middot; BODY FIX ${bfDone}/${BODY_FIX.length}</span><span style="color:${workoutCounted?'#00ff88':equipColor}">${pct}%${workoutCounted?' &#x2713;':''}</span></div>
+     <div class="prog-bar-labels"><span>EXERCISES ${Math.min(exDone,minReq)}/${minReq} &middot; BODY FIX ${bfDone}/${safeBodyFix.length}</span><span style="color:${workoutCounted?'#00ff88':equipColor}">${pct}%${workoutCounted?' &#x2713;':''}</span></div>
       <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${pct}%;background:${workoutCounted?'#00ff88':equipColor}"></div></div>
     </div>
 
@@ -1986,25 +1981,30 @@ function renderWorkoutTab(today,dd){
     <div class="ex-section" id="ex-section-main">
       <div class="section-lbl" style="color:#ff4444; margin-top:20px;">🔴 PHASE 2: LIFTING REGIMEN</div>
       ${(()=>{
-        var allExercises = day.exercises.map(function(ex,i){return {ex:ex,i:i};});
+        var allExercises = safeExercises.map(function(ex,i){return {ex:ex,i:i};});
         var doneExes = allExercises.filter(function(o){return !!dd.ex[exKey+'-'+o.i];});
         var remainExes = allExercises.filter(function(o){return !dd.ex[exKey+'-'+o.i];});
-        var allDoneNow = doneExes.length === day.exercises.length && day.exercises.length > 0;
+        var allDoneNow = doneExes.length === safeExercises.length && safeExercises.length > 0;
 
         function renderSingleEx(obj){
           var ex=obj.ex; var i=obj.i;
           var key=exKey+'-'+i;
           var isDone=!!dd.ex[key];
           var isOpen=UI.openEx===key;
-          var noWeight=['plank','shadowbox','hold','stretch','couch','bug','jump','carry','interval','bound'].some(function(k){return ex.n.toLowerCase().includes(k);});
-          var isTimed=['battle rope','battle ropes','sled push','sled pull','farmer carry','farmer walk','jump rope','assault bike','rower','ski erg'].some(function(k){return ex.n.toLowerCase().includes(k);});
-          var timedVal=(dd.w&&dd.w[key+'-time'])||'';
-          var isSuperset = ex.n.includes(' + ') || ex.n.toLowerCase().includes('superset');
-          var supersetParts = isSuperset ? ex.n.replace(/\s*\(superset.*?\)/i,'').split(' + ').map(function(p){return p.trim();}) : [ex.n];
+          
+          var exName = ex.n || 'Exercise';
+          var exReps = ex.r || '10';
+          var exSets = ex.s || 3;
+
+          var noWeight=['plank','shadowbox','hold','stretch','couch','bug','jump','carry','interval','bound'].some(function(k){return exName.toLowerCase().includes(k);});
+          var isTimed=['battle rope','battle ropes','sled push','sled pull','farmer carry','farmer walk','jump rope','assault bike','rower','ski erg'].some(function(k){return exName.toLowerCase().includes(k);});
+          var timedVal=(dd.w[key+'-time'])||'';
+          var isSuperset = exName.includes(' + ') || exName.toLowerCase().includes('superset');
+          var supersetParts = isSuperset ? exName.replace(/\s*\(superset.*?\)/i,'').split(' + ').map(function(p){return p.trim();}) : [exName];
           
           function buildSummary(partIdx){
             var rows=[];
-            for(var s=0;s<ex.s;s++){var sw=dd.w[key+'-p'+partIdx+'-s'+s];if(sw)rows.push('S'+(s+1)+':'+sw+'lb');}
+            for(var s=0;s<exSets;s++){var sw=dd.w[key+'-p'+partIdx+'-s'+s];if(sw)rows.push('S'+(s+1)+':'+sw+'lb');}
             return rows.join(' · ');
           }
           var allWeightSummary = supersetParts.map(function(_,pi){return buildSummary(pi);}).filter(Boolean).join(' | ');
@@ -2016,18 +2016,18 @@ function renderWorkoutTab(today,dd){
           html += '<div class="ex-info" onclick="toggleWeight(\''+ key +'\')">' ;
           html += '<div class="ex-name">'+(typeof weightProgressAlert==='function'?weightProgressAlert(equip,dayIdx,i):'')+(isSuperset?'&#x1F501; SUPERSET':'')+( isSuperset?'<br>':'')+ supersetParts.join('<br>+ ')+'</div>';
           if(isTimed){
-            html += '<div class="ex-note" style="font-size:11px;color:'+(timedVal?'var(--accent)':'#555')+'">' + (timedVal ? '&#x23F1; '+timedVal+'s logged' : ex.s+' sets &middot; '+ex.r)+'</div>';
+            html += '<div class="ex-note" style="font-size:11px;color:'+(timedVal?'var(--accent)':'#555')+'">' + (timedVal ? '&#x23F1; '+timedVal+'s logged' : exSets+' sets &middot; '+exReps)+'</div>';
           } else {
-            html += '<div class="ex-note" style="font-size:11px;color:'+(allWeightSummary?'var(--accent)':'#555')+ '">' + (allWeightSummary||ex.s+' sets &middot; tap to log weights')+'</div>';
+            html += '<div class="ex-note" style="font-size:11px;color:'+(allWeightSummary?'var(--accent)':'#555')+ '">' + (allWeightSummary||exSets+' sets &middot; tap to log weights')+'</div>';
           }
           html += '</div>';
-          html += '<div class="ex-reps-badge">'+(isTimed?'&#x23F1;':ex.s+'&times;'+ex.r)+'</div>';
+          html += '<div class="ex-reps-badge">'+(isTimed?'&#x23F1;':exSets+'&times;'+exReps)+'</div>';
           html += '</div>';
 
           if(isTimed){
             html += '<div class="ex-weight '+(isOpen?'open':'')+'">' ;
             html += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG TIME PER SET</div>';
-            for(var s=0;s<ex.s;s++){
+            for(var s=0;s<exSets;s++){
               html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
               html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
               html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-time-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
@@ -2042,13 +2042,13 @@ function renderWorkoutTab(today,dd){
               supersetParts.forEach(function(part,pi){
                 html += '<div style="margin-bottom:14px">';
                 html += '<div style="font-size:10px;letter-spacing:2px;color:#ff6b35;margin-bottom:8px;padding:4px 8px;background:#1a0e00;border-radius:4px;border-left:2px solid #ff6b35">'+part.toUpperCase()+'</div>';
-                for(var s=0;s<ex.s;s++){
+                for(var s=0;s<exSets;s++){
                   html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
                   html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
                   html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-p'+pi+'-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
                   html += '<span style="font-size:12px;color:#555">lbs</span>';
                   html += '<input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+ key +'-p'+pi+'-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/>';
-                  var repTarget = (ex.r.split('/')[pi]||ex.r);
+                  var repTarget = (exReps.split('/')[pi]||exReps);
                   html += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+repTarget+' reps</span>';
                   html += '</div>';
                 }
@@ -2056,13 +2056,13 @@ function renderWorkoutTab(today,dd){
               });
             } else {
               html += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG WEIGHT PER SET</div>';
-              for(var s=0;s<ex.s;s++){
+              for(var s=0;s<exSets;s++){
                 html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
                 html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
                 html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-p0-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
                 html += '<span style="font-size:12px;color:#555">lbs</span>';
                 html += '<input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+ key +'-p0-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/>';
-                html += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+ex.r+' reps</span>';
+                html += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+exReps+' reps</span>';
                 html += '</div>';
               }
             }
@@ -2089,7 +2089,7 @@ function renderWorkoutTab(today,dd){
           if(typeof saveLastWorkout==='function') saveLastWorkout(day.type);
           if(typeof recordWorkout==='function') recordWorkout(day.type);
           let stats = JSON.parse(localStorage.getItem("weeklyStats")) || {pull:0,push:0,legs:0,arms:0};
-          let key = day.type.toLowerCase()
+          let key = (day.type||'').toLowerCase();
           if(key.includes("pull")) key = "pull"; else if(key.includes("push")) key = "push"; else if(key.includes("leg")) key = "legs"; else if(key.includes("arm")) key = "arms";
           if(!stats[key]) stats[key] = 0;
           stats[key]++;
@@ -2112,7 +2112,7 @@ function renderWorkoutTab(today,dd){
     <div class="ex-section" style="margin-top:4px">
       <div class="section-lbl" style="color:#00ff88">🟢 PHASE 4: BODY FIX & COOL-DOWN</div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:0 0 4px">Do these directly after your lifting and striking</div>
-      ${BODY_FIX.map((bf,i)=>{
+      ${safeBodyFix.map((bf,i)=>{
         const key=`bf-${dayIdx}-${i}`;
         const isDone=!!dd.bf[key];
         return `
@@ -2137,7 +2137,7 @@ function renderWorkoutTab(today,dd){
       </div>
       <span class="box-icon">❄️</span>
       <div><div class="box-lbl">COOL-DOWN · TAP TO CHECK OFF</div>
-    <div class="box-txt" style="color:${dd.w['cd-'+equip+'-'+dayIdx]?'#444':'#aa88ff'};${dd.w['cd-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.cooldown}</div></div>
+    <div class="box-txt" style="color:${dd.w['cd-'+equip+'-'+dayIdx]?'#444':'#aa88ff'};${dd.w['cd-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.cooldown||''}</div></div>
     </div>
     ${typeof renderStretchTimers === 'function' ? renderStretchTimers(day.cooldown) : ''}
 
