@@ -1753,26 +1753,46 @@ function renderWorkoutTab(today,dd){
   // MON–FRI workout days
   const dayIdx=['MON','TUE','WED','THU','FRI'].indexOf(ad);
   if(dayIdx<0) return dayTabsHTML;
+ // Handle Specialized Module Override First
+  if(UI.activeSpecial){
+    return renderSpecialModuleTab(today, dd, UI.activeSpecial, dayTabsHTML);
+  }
 
   // Equipment selector — shown if no equipment chosen yet today OR user wants to change
-  if(!equip){
+  if(!equip && !UI.activeSpecial){
     const types=['PULL','PUSH','LEGS','ARMS + CORE','OPTIONAL PULL'];
     const typeColors=['#00ff88','#ff6b35','#ffcc00','#6699ff','#00ff88'];
     const typeIcons=['🔼','💥','🦵','💪','🔼'];
     const equipOptions=[
-      {k:'gym',      icon:'🏋️', label:'FULL GYM',    sub:'Barbell · Cable · Everything',  color:'#00ff88'},
-      {k:'bowflex',  icon:'🏠', label:'BOWFLEX',      sub:'Adjustable dumbbells 5-52lbs',  color:'#ff6b35'},
-      {k:'bands',    icon:'🎽', label:'BANDS',         sub:'Resistance bands only',         color:'#ffcc00'},
+      {k:'gym',      icon:'🏋️', label:'FULL GYM',    sub:'Barbell · Cable',  color:'#00ff88'},
+      {k:'bowflex',  icon:'🏠', label:'BOWFLEX',      sub:'Dumbbells 5-52lbs',  color:'#ff6b35'},
+      {k:'bands',    icon:'🎽', label:'BANDS',         sub:'Resistance bands',         color:'#ffcc00'},
       {k:'bodyweight',icon:'💪',label:'BODYWEIGHT',   sub:'No equipment needed',           color:'#6699ff'},
     ];
     let btnHTML='';
     equipOptions.forEach(function(e){
-      btnHTML+='<button data-equip="'+e.k+'" class="equip-btn" style="padding:18px 12px;background:var(--card);border:2px solid #2a2a2a;border-radius:14px;cursor:pointer;text-align:center">'
+      btnHTML+='<button onclick="UI.activeSpecial=null; selectEquip(\''+e.k+'\')" class="equip-btn" style="padding:18px 12px;background:var(--card);border:2px solid #2a2a2a;border-radius:14px;cursor:pointer;text-align:center">'
         +'<div style="font-size:32px;margin-bottom:8px">'+e.icon+'</div>'
         +'<div style="font-size:15px;font-family:Impact,sans-serif;letter-spacing:2px;color:'+e.color+';margin-bottom:4px">'+e.label+'</div>'
         +'<div style="font-size:10px;color:#555">'+e.sub+'</div>'
         +'</button>';
     });
+
+    const specialOptions=[
+      {k:'conditioning', icon:'🥊', label:'CONDITIONING', sub:'Fighter cardio', color:'#ff4444'},
+      {k:'bjj', icon:'🥋', label:'BJJ DRILLS', sub:'Solo movements', color:'#6699ff'},
+      {k:'flexibility', icon:'🧘‍♂️', label:'FLEXIBILITY', sub:'Splits progression', color:'#aa88ff'},
+      {k:'mewing', icon:'🤫', label:'MEWING', sub:'Posture & Jaw', color:'#00D4FF'}
+    ];
+    let specialHTML = '';
+    specialOptions.forEach(function(e){
+      specialHTML+='<button onclick="UI.activeEquip=null; UI.activeSpecial=\''+e.k+'\'; render();" style="padding:14px 12px;background:var(--card);border:1px solid #2a2a2a;border-radius:12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px">'
+        +'<div style="font-size:28px;flex-shrink:0">'+e.icon+'</div>'
+        +'<div><div style="font-size:14px;font-family:Impact,sans-serif;letter-spacing:1px;color:'+e.color+'">'+e.label+'</div>'
+        +'<div style="font-size:10px;color:#666;margin-top:2px">'+e.sub+'</div></div>'
+        +'</button>';
+    });
+
     return dayTabsHTML
       +'<div style="padding:20px 16px">'
         +'<div style="text-align:center;margin-bottom:6px">'
@@ -1780,9 +1800,11 @@ function renderWorkoutTab(today,dd){
           +'<div style="font-size:36px;font-family:Impact,sans-serif;letter-spacing:3px;color:'+typeColors[dayIdx]+'">'+typeIcons[dayIdx]+' '+types[dayIdx]+'</div>'
           +(ad==='FRI'?'<div style="font-size:11px;color:var(--text3);margin-top:4px">No penalty if you skip. But the men who show up on Fridays are built different.</div>':'')
         +'</div>'
-        +'<div style="font-size:13px;letter-spacing:2px;color:var(--text2);text-align:center;margin:20px 0 12px;font-family:Impact,sans-serif">WHAT DO YOU HAVE TODAY?</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+btnHTML+'</div>'
-        +(ad==='FRI'?'<button data-day="SAT" class="switch-day-btn" style="width:100%;padding:14px;background:none;border:1px solid #2a2a2a;border-radius:10px;color:var(--text3);font-size:12px;font-family:Impact,sans-serif;letter-spacing:2px;cursor:pointer">SKIP TODAY — GO TO SATURDAY</button>':'')
+        +'<div style="font-size:13px;letter-spacing:2px;color:var(--text2);text-align:center;margin:20px 0 12px;font-family:Impact,sans-serif">CHOOSE YOUR WORKOUT</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px">'+btnHTML+'</div>'
+        +'<div style="font-size:13px;letter-spacing:2px;color:var(--text2);text-align:center;margin:20px 0 12px;font-family:Impact,sans-serif">SPECIALIZED MODULES</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+specialHTML+'</div>'
+        +(ad==='FRI'?'<button data-day="SAT" class="switch-day-btn" style="width:100%;padding:14px;background:none;border:1px solid #2a2a2a;border-radius:10px;color:var(--text3);font-size:12px;font-family:Impact,sans-serif;letter-spacing:2px;cursor:pointer;margin-top:12px">SKIP TODAY — GO TO SATURDAY</button>':'')
       +'</div>';
   }
 
@@ -2126,6 +2148,66 @@ renderWeeklyTracker()
       </div>
     </div>
   `;
+}
+
+function renderSpecialModuleTab(today, dd, type, dayTabsHTML) {
+  const lib = EXERCISE_LIBRARY[type];
+  if(!lib) return dayTabsHTML + '<div style="padding:20px;color:red;text-align:center;">Library not found for: ' + type + '. Make sure EXERCISE_LIBRARY is updated.</div><button onclick="UI.activeSpecial=null;render()" style="margin:20px;padding:12px;width:calc(100% - 40px);background:var(--card);color:#fff;border:1px solid #333;border-radius:8px">GO BACK</button>';
+  
+  const labels = {
+    conditioning: {n:'FIGHTER CONDITIONING', c:'#ff4444', emoji:'🥊', t:'Cardio & Explosive Power'},
+    bjj: {n:'BJJ SOLO DRILLS', c:'#6699ff', emoji:'🥋', t:'Mat Movements & Hip Mobility'},
+    flexibility: {n:'FLEXIBILITY & SPLITS', c:'#aa88ff', emoji:'🧘‍♂️', t:'Deep Mobility Progression'},
+    mewing: {n:'MEWING REGIMEN', c:'#00D4FF', emoji:'🤫', t:'Jaw & Posture Alignment'},
+  };
+  const config = labels[type];
+  const exKey = 'spec-'+type;
+  
+  const exDone = lib.filter((_,i)=>dd.ex && dd.ex[exKey+'-'+i]).length;
+  const pct = Math.round(exDone/lib.length*100);
+
+  let html = dayTabsHTML + `
+    <div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">${config.emoji} SPECIALIZED MODULE</div>
+        <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:${config.c}">${config.n}</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">${config.t}</div>
+      </div>
+      <button onclick="UI.activeSpecial=null;render()" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">CLOSE</button>
+    </div>
+
+    <div class="prog-bar-wrap">
+      <div class="prog-bar-labels"><span>PROGRESS</span><span style="color:${config.c}">${exDone}/${lib.length}</span></div>
+      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${pct}%;background:${config.c}"></div></div>
+    </div>
+    
+    <div class="ex-section">
+  `;
+
+  lib.forEach((ex, i) => {
+    const key = exKey+'-'+i;
+    const isDone = dd.ex && !!dd.ex[key];
+    
+    html += `
+      <div class="ex-item ${isDone?'done ':''}" style="${isDone?'opacity:0.7;border-color:'+config.c+'44;background:rgba(0,0,0,0.4)':''}">
+        <div class="ex-top" onclick="toggleEx('${key}','ex')">
+          <div class="ex-check ${isDone?'checked ':''}" style="${isDone?'background:'+config.c+';border-color:'+config.c:''}"></div>
+          <div class="ex-info">
+            <div class="ex-name" style="${isDone?'color:var(--text3)':''}">${ex.name}</div>
+            <div class="ex-note" style="color:var(--text3)">${ex.notes}</div>
+          </div>
+          <div class="ex-reps-badge" style="color:${config.c}">${ex.sets} × ${ex.reps}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  if (exDone === lib.length && lib.length > 0) {
+    html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid '+config.c+'66;border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">🔥</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:'+config.c+'">MODULE COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Discipline secured.</div></div>';
+  }
+
+  html += `</div>`;
+  return html;
 }
 
 // ═══════════════════════════════════════════════════════════
