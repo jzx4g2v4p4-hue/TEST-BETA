@@ -1166,9 +1166,27 @@ function todayDow(){
 }
 
 function getDD(date){
-  if(!DB.days)DB.days={};
-  if(!DB.days[date])DB.days[date]={ex:{},w:{},bf:{},rec:{},supp:{},sex:{},habits:{},bp:{},sleep:{},urges:[],hygiene:{},minox:{}};
-  return DB.days[date];
+  if(!DB.days) DB.days={};
+  if(!DB.days[date]) DB.days[date]={};
+  
+  let d = DB.days[date];
+  if(!d.ex) d.ex={};
+  if(!d.w) d.w={};
+  if(!d.bf) d.bf={};
+  if(!d.rec) d.rec={};
+  if(!d.supp) d.supp={};
+  if(!d.sex) d.sex={};
+  if(!d.habits) d.habits={};
+  if(!d.bp) d.bp={};
+  if(!d.sleep) d.sleep={};
+  if(!d.urges) d.urges=[];
+  if(!d.hygiene) d.hygiene={};
+  if(!d.minox) d.minox={};
+  if(!d.prayer) d.prayer={};
+  if(!d.morning) d.morning={};
+  if(!d.kegel) d.kegel={};
+  
+  return d;
 }
 function setAccent(c){document.documentElement.style.setProperty('--accent',c);}
 function getDayType(d){return({'MON':'PULL','TUE':'PUSH','WED':'LEGS','THU':'ARMS+CORE','FRI':'OPTIONAL','SAT':'FIGHT DAY','SUN':'REST'})[d]||'TRAIN';}
