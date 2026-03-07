@@ -1757,56 +1757,59 @@ function renderWorkoutTab(today,dd){
   if(UI.activeSpecial){
     return renderSpecialModuleTab(today, dd, UI.activeSpecial, dayTabsHTML);
   }
+// Equipment selector / Command Center
+  if(!equip){
+    let stats = JSON.parse(localStorage.getItem("weeklyStats")) || {pull:0,push:0,legs:0,arms:0};
+    const recommendation = typeof getWorkoutRecommendation === 'function' ? getWorkoutRecommendation() : getDayType(ad);
+    const missed = typeof getMissedWorkout === 'function' ? getMissedWorkout() : null;
 
-  // Equipment selector — shown if no equipment chosen yet today OR user wants to change
-  if(!equip && !UI.activeSpecial){
-    const types=['PULL','PUSH','LEGS','ARMS + CORE','OPTIONAL PULL'];
-    const typeColors=['#00ff88','#ff6b35','#ffcc00','#6699ff','#00ff88'];
-    const typeIcons=['🔼','💥','🦵','💪','🔼'];
     const equipOptions=[
       {k:'gym',      icon:'🏋️', label:'FULL GYM',    sub:'Barbell · Cable',  color:'#00ff88'},
       {k:'bowflex',  icon:'🏠', label:'BOWFLEX',      sub:'Dumbbells 5-52lbs',  color:'#ff6b35'},
       {k:'bands',    icon:'🎽', label:'BANDS',         sub:'Resistance bands',         color:'#ffcc00'},
-      {k:'bodyweight',icon:'💪',label:'BODYWEIGHT',   sub:'No equipment needed',           color:'#6699ff'},
+      {k:'bodyweight',icon:'💪',label:'BODYWEIGHT',   sub:'No equipment',           color:'#6699ff'},
     ];
     let btnHTML='';
     equipOptions.forEach(function(e){
-      btnHTML+='<button onclick="UI.activeSpecial=null; selectEquip(\''+e.k+'\')" class="equip-btn" style="padding:18px 12px;background:var(--card);border:2px solid #2a2a2a;border-radius:14px;cursor:pointer;text-align:center">'
-        +'<div style="font-size:32px;margin-bottom:8px">'+e.icon+'</div>'
-        +'<div style="font-size:15px;font-family:Impact,sans-serif;letter-spacing:2px;color:'+e.color+';margin-bottom:4px">'+e.label+'</div>'
-        +'<div style="font-size:10px;color:#555">'+e.sub+'</div>'
-        +'</button>';
-    });
-
-    const specialOptions=[
-      {k:'conditioning', icon:'🥊', label:'CONDITIONING', sub:'Fighter cardio', color:'#ff4444'},
-      {k:'bjj', icon:'🥋', label:'BJJ DRILLS', sub:'Solo movements', color:'#6699ff'},
-      {k:'flexibility', icon:'🧘‍♂️', label:'FLEXIBILITY', sub:'Splits progression', color:'#aa88ff'},
-      {k:'mewing', icon:'🤫', label:'MEWING', sub:'Posture & Jaw', color:'#00D4FF'}
-    ];
-    let specialHTML = '';
-    specialOptions.forEach(function(e){
-      specialHTML+='<button onclick="UI.activeEquip=null; UI.activeSpecial=\''+e.k+'\'; render();" style="padding:14px 12px;background:var(--card);border:1px solid #2a2a2a;border-radius:12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px">'
-        +'<div style="font-size:28px;flex-shrink:0">'+e.icon+'</div>'
-        +'<div><div style="font-size:14px;font-family:Impact,sans-serif;letter-spacing:1px;color:'+e.color+'">'+e.label+'</div>'
-        +'<div style="font-size:10px;color:#666;margin-top:2px">'+e.sub+'</div></div>'
+      btnHTML+='<button data-equip="'+e.k+'" class="equip-btn" style="padding:14px 12px;background:rgba(16,28,46,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s">'
+        +'<div style="font-size:28px;margin-bottom:6px">'+e.icon+'</div>'
+        +'<div style="font-size:14px;font-family:Impact,sans-serif;letter-spacing:1px;color:'+e.color+';margin-bottom:2px">'+e.label+'</div>'
+        +'<div style="font-size:9px;color:var(--text3)">'+e.sub+'</div>'
         +'</button>';
     });
 
     return dayTabsHTML
-      +'<div style="padding:20px 16px">'
-        +'<div style="text-align:center;margin-bottom:6px">'
-          +'<div style="font-size:11px;letter-spacing:3px;color:var(--text3);font-family:Impact,sans-serif">'+(ad==='FRI'?'OPTIONAL — ':'')+'TODAY IS</div>'
-          +'<div style="font-size:36px;font-family:Impact,sans-serif;letter-spacing:3px;color:'+typeColors[dayIdx]+'">'+typeIcons[dayIdx]+' '+types[dayIdx]+'</div>'
-          +(ad==='FRI'?'<div style="font-size:11px;color:var(--text3);margin-top:4px">No penalty if you skip. But the men who show up on Fridays are built different.</div>':'')
+      +'<div style="padding:16px">'
+        
+        // 1. SMART RECOMMENDATION ENGINE
+        +'<div style="margin-bottom:12px;padding:16px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,255,136,0.05));border:1px solid rgba(0,212,255,0.3);border-radius:14px;text-align:center;box-shadow:0 0 20px rgba(0,212,255,0.1)">'
+          +'<div style="font-size:10px;letter-spacing:3px;color:var(--cyan);font-family:Impact,sans-serif;margin-bottom:6px">🔥 SYSTEM RECOMMENDATION</div>'
+          +'<div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--text)">'+recommendation+'</div>'
+          +'<div style="font-size:10px;color:var(--text2);margin-top:4px">Based on your weekly muscle balance</div>'
         +'</div>'
-        +'<div style="font-size:13px;letter-spacing:2px;color:var(--text2);text-align:center;margin:20px 0 12px;font-family:Impact,sans-serif">CHOOSE YOUR WORKOUT</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px">'+btnHTML+'</div>'
-        +'<div style="font-size:13px;letter-spacing:2px;color:var(--text2);text-align:center;margin:20px 0 12px;font-family:Impact,sans-serif">SPECIALIZED MODULES</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+specialHTML+'</div>'
-        +(ad==='FRI'?'<button data-day="SAT" class="switch-day-btn" style="width:100%;padding:14px;background:none;border:1px solid #2a2a2a;border-radius:10px;color:var(--text3);font-size:12px;font-family:Impact,sans-serif;letter-spacing:2px;cursor:pointer;margin-top:12px">SKIP TODAY — GO TO SATURDAY</button>':'')
+
+        // MISSED WORKOUT ALERT
+        +(missed ? '<div style="margin-bottom:12px;padding:12px;background:rgba(255,140,0,0.1);border:1px solid rgba(255,140,0,0.4);border-radius:10px;text-align:center;cursor:pointer" onclick="alert(\'Make-up generated!\')"><div style="font-size:10px;letter-spacing:2px;color:var(--orange);font-family:Impact,sans-serif;margin-bottom:4px">⚠️ MISSED WORKOUT DETECTED</div><div style="font-size:12px;color:var(--text)">You missed <b>'+missed+'</b>. Tap here to override and make it up today.</div></div>' : '')
+
+        // WEEKLY BALANCE
+        +'<div style="margin-bottom:24px;padding:12px;background:rgba(10,18,30,0.8);border:1px solid rgba(255,255,255,0.05);border-radius:12px">'
+          +'<div style="font-size:9px;letter-spacing:3px;color:var(--text3);font-family:Impact,sans-serif;margin-bottom:10px;text-align:center">WEEKLY TRACKER</div>'
+          +'<div style="display:flex;justify-content:space-between;text-align:center">'
+            +'<div style="flex:1"><div style="font-size:14px;color:'+(stats.pull>0?'var(--green)':'var(--text3)')+'">'+(stats.pull>0?'✓':'❌')+'</div><div style="font-size:9px;color:var(--text3);margin-top:4px">PULL</div></div>'
+            +'<div style="flex:1"><div style="font-size:14px;color:'+(stats.push>0?'var(--green)':'var(--text3)')+'">'+(stats.push>0?'✓':'❌')+'</div><div style="font-size:9px;color:var(--text3);margin-top:4px">PUSH</div></div>'
+            +'<div style="flex:1"><div style="font-size:14px;color:'+(stats.legs>0?'var(--green)':'var(--text3)')+'">'+(stats.legs>0?'✓':'❌')+'</div><div style="font-size:9px;color:var(--text3);margin-top:4px">LEGS</div></div>'
+            +'<div style="flex:1"><div style="font-size:14px;color:'+(stats.arms>0?'var(--green)':'var(--text3)')+'">'+(stats.arms>0?'✓':'❌')+'</div><div style="font-size:9px;color:var(--text3);margin-top:4px">ARMS</div></div>'
+          +'</div>'
+        +'</div>'
+
+        // 2. EQUIPMENT SELECTION
+        +'<div style="font-size:11px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif;margin-bottom:10px;text-align:center">WHAT EQUIPMENT DO YOU HAVE TODAY?</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+btnHTML+'</div>'
+        
+        +(ad==='FRI'?'<button data-day="SAT" class="switch-day-btn" style="width:100%;padding:14px;background:none;border:1px solid #2a2a2a;border-radius:10px;color:var(--text3);font-size:12px;font-family:Impact,sans-serif;letter-spacing:2px;cursor:pointer">SKIP TODAY — GO TO SATURDAY</button>':'')
       +'</div>';
   }
+
 
   // Equipment selected — get the workout
   const equipData = FIGHTERS[equip];
@@ -1832,6 +1835,7 @@ function renderWorkoutTab(today,dd){
       <button onclick="selectEquip(null)" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">${equipData.label}<br><span style="color:var(--text3);font-size:9px">TAP TO CHANGE</span></button>
     </div>
 
+    <div class="section-lbl" style="color:#ffcc00; padding:0 20px; margin-top:16px;">🟡 PHASE 1: WARM-UP</div>
     <div class="info-box warm" style="cursor:pointer" onclick="toggleWarmup('${today}','wu-${equip}-${dayIdx}')">
       <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'#333'};background:${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
         ${dd.w['wu-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
@@ -1946,7 +1950,7 @@ ${recommendation}
 return html
 })()}
     
-      <div class="section-lbl">TODAY'S WORKOUT</div>
+      <div class="section-lbl" style="color:#ff4444; margin-top:20px;">🔴 PHASE 2: LIFTING REGIMEN</div>
       ${(()=>{
         var allExercises = day.exercises.map(function(ex,i){return {ex:ex,i:i};});
         var doneExes = allExercises.filter(function(o){return !!dd.ex[exKey+'-'+o.i];});
@@ -2105,13 +2109,17 @@ renderWeeklyTracker()
         `;
       }).join('')}
     </div>
+    
+<div class="divider"></div>
+
+    <div class="section-lbl" style="color:#00D4FF; padding:0 20px;">🔵 PHASE 3: MARTIAL ARTS ROUNDS</div>
+    ${typeof renderWorkoutComboBlock === 'function' ? renderWorkoutComboBlock(today, dd, dayIdx) : ''}
 
     <div class="divider"></div>
 
     <div class="ex-section" style="margin-top:4px">
-      <div class="section-lbl blue">🧠 BODY FIX — TECH NECK · SCIATICA · FLEXIBILITY</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:0 0 4px">Do these after your workout or during cooldown</div>
-   
+      <div class="section-lbl" style="color:#00ff88">🟢 PHASE 4: BODY FIX & COOL-DOWN</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:0 0 4px">Do these directly after your lifting and striking</div>
       ${BODY_FIX.map((bf,i)=>{
         const key=`bf-${dayIdx}-${i}`;
         const isDone=!!dd.bf[key];
@@ -2129,10 +2137,10 @@ renderWeeklyTracker()
       }).join('')}
     </div>
 
-    ${renderWorkoutComboBlock(today, dd, dayIdx)}
-    ${renderWorkoutKegelBlock(today, dd)}
+    ${typeof renderWorkoutKegelBlock === 'function' ? renderWorkoutKegelBlock(today, dd) : ''}
 
     <div class="info-box cool" style="margin-top:14px;cursor:pointer" onclick="toggleWarmup('${today}','cd-${equip}-${dayIdx}')">
+    
       <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'#333'};background:${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
         ${dd.w['cd-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
       </div>
