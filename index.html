@@ -3717,7 +3717,26 @@ function toggleWarmup(date,key){
   saveDB();render();
 }
 function switchPhase(i){UI.activePhase=i;DB.activePhase=i;saveDB();render();}
-function switchDay(d){UI.activeDay=d;DB.activeDay=d;saveDB();render();}
+function switchDay(d) {
+  UI.activeDay = d;
+  UI.activeEquip = null;
+  
+  // Force the UI header date to match the day tab you just clicked
+  const daysOfWeek = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const todayObj = new Date();
+  const currentDow = todayObj.getDay();
+  const targetDow = daysOfWeek.indexOf(d);
+  
+  // Calculate the date difference
+  let diff = targetDow - currentDow;
+  let targetDate = new Date(todayObj);
+  targetDate.setDate(todayObj.getDate() + diff);
+  
+  // Update the active date so the header and data sync perfectly
+  UI.activeDate = targetDate.toISOString().slice(0,10);
+  
+  render();
+}
 
 function toggleEx(key,type){
   var dd=getDD(UI.activeDate);
@@ -6629,7 +6648,6 @@ function renderWorkoutHomeHeader(today, dd) {
 
   + '<div onclick="switchTab(\'kegel\')" style="background:'+(kegelDone?'rgba(255,140,0,0.08)':'rgba(15,27,45,0.8)')+';border:1px solid '+(kegelDone?'rgba(255,140,0,0.4)':'var(--border2)')+';border-radius:14px;padding:14px;cursor:pointer;'+(kegelDone?'box-shadow:0 0 10px rgba(255,140,0,0.15)':'')+ '">'
   + '<div style="display:flex;align-items:flex-start;justify-content:space-between">'
-  + '<div><div style="font-size:9px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">KEGELS</div>'
   + '<div style="font-size:13px;font-family:Impact,sans-serif;color:'+(kegelDone?'#FF8C00':'var(--text2)')+';margin-top:2px">'+(kegelDone?'Done ✓':kegelStreak+'d streak')+'</div></div>'
   + '<div style="position:relative;width:38px;height:38px">'
   + '<svg width="38" height="38" style="transform:rotate(-90deg)">'
