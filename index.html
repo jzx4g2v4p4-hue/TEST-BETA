@@ -457,6 +457,87 @@ let workoutMode = "preset";
 function setWorkoutMode(mode){
 workoutMode = mode;
 }
+
+/* ─────────────────────────────
+   WEEKLY TRACKER STATE
+───────────────────────────── */
+
+let previousWeeklyStats = null;
+function renderWeeklyTracker(){
+
+  const stats = window.weeklyStats || {
+    pull:0,
+    push:0,
+    legs:0,
+    arms:0
+  };
+
+  function dots(v,key){
+
+  const max = 3;
+  let filled = Math.min(v, max);
+
+  let prev = previousWeeklyStats ? previousWeeklyStats[key] || 0 : 0;
+  let increased = v > prev;
+
+  let html = "";
+
+  for(let i=0;i<max;i++){
+
+    const isFilled = i < filled;
+
+    const bg = isFilled ? "#00ff88" : "#0a1a2a";
+    const bdr = isFilled ? "#00ff88" : "#222";
+
+    const flash = (increased && i === filled-1)
+      ? "animation:trackerFlash 0.6s ease"
+      : "";
+
+    html += '<div style="width:18px;height:18px;border-radius:4px;background:' + bg + ';border:1px solid ' + bdr + ';' + flash + '"></div>';
+
+  }
+
+  return '<div style="display:flex;gap:4px">' + html + '</div>';
+}
+  const html = `
+  <div class="e-card green" style="margin-top:10px">
+    <div class="sec-lbl">WEEKLY MUSCLE BALANCE</div>
+
+    <div class="s-row">
+      <div style="flex:1">Pull</div>
+      ${dots(stats.pull,"pull")}
+    </div>
+
+    <div class="s-row">
+      <div style="flex:1">Push</div>
+      ${dots(stats.push,"push")}
+    </div>
+
+    <div class="s-row">
+      <div style="flex:1">Legs</div>
+      ${dots(stats.legs,"legs")}
+    </div>
+
+    <div class="s-row">
+      <div style="flex:1">Arms</div>
+      ${dots(stats.arms,"arms")}
+    </div>
+
+  </div>
+  `;
+  const app = document.getElementById("app");
+  if(!app) return;
+
+  if(!document.getElementById("weeklyTracker")){
+    const wrap = document.createElement("div");
+    wrap.id = "weeklyTracker";
+    wrap.innerHTML = html;
+    app.insertBefore(wrap, app.firstChild.nextSibling);
+  }else{
+    document.getElementById("weeklyTracker").innerHTML = html;
+  }
+
+}
 const EXERCISE_LIBRARY = {
 chest: [
 {name:"Push-Ups",sets:"3-5",reps:"10-20",notes:"Standard chest press from plank position",difficulty:"beginner",equipment:"bodyweight"},
