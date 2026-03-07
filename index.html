@@ -1723,35 +1723,93 @@ function render(){
     });
   }
 }
+/ ═══════════════════════════════════════════════════════════
+// WORKOUT GENERATORS (STANDARD & AI)
 // ═══════════════════════════════════════════════════════════
-// AI GENERATOR
-// ═══════════════════════════════════════════════════════════
-function generateAIWorkout(ad) {
+function generateStandardWorkout(ad, equip) {
+  // 1. Filter the master library based on the equipment you selected
+  let allowedEquip = [];
+  if (equip === 'bodyweight') allowedEquip = ['bodyweight', 'pullup bar', 'box', 'wall', 'none'];
+  else if (equip === 'bands') allowedEquip = ['bodyweight', 'pullup bar', 'bands', 'rope', 'none'];
+  else if (equip === 'bowflex') allowedEquip = ['bodyweight', 'pullup bar', 'dumbbells', 'bench', 'none'];
+  else allowedEquip = ['all']; // Full Gym gets everything
+
+  function filterLib(lib) {
+     if(!lib) return [];
+     if(allowedEquip[0] === 'all') return lib;
+     let filtered = lib.filter(ex => allowedEquip.some(eq => (ex.equipment||'').toLowerCase().includes(eq)));
+     return filtered.length > 0 ? filtered : lib.slice(0, 3); // Fallback so it never breaks
+  }
+
+  // 2. Select muscle groups based on the target day
   let pools = [];
-  if(!EXERCISE_LIBRARY || !EXERCISE_LIBRARY.back) return {name:"Fallback",type:"Rest",tag:"",warmup:"",cooldown:"",exercises:[]};
-  if (ad === 'MON' || ad === 'FRI') pools = [{lib: EXERCISE_LIBRARY.back, count: 3}, {lib: EXERCISE_LIBRARY.arms, count: 2}];
-  else if (ad === 'TUE') pools = [{lib: EXERCISE_LIBRARY.chest, count: 3}, {lib: EXERCISE_LIBRARY.shoulders, count: 2}];
-  else if (ad === 'WED') pools = [{lib: EXERCISE_LIBRARY.legs, count: 4}];
-  else if (ad === 'THU') pools = [{lib: EXERCISE_LIBRARY.arms, count: 3}, {lib: EXERCISE_LIBRARY.core, count: 2}];
-  
+  if (ad === 'MON') pools = [{lib: filterLib(EXERCISE_LIBRARY.back), count: 4}, {lib: filterLib(EXERCISE_LIBRARY.arms), count: 3}];
+  else if (ad === 'TUE') pools = [{lib: filterLib(EXERCISE_LIBRARY.chest), count: 4}, {lib: filterLib(EXERCISE_LIBRARY.shoulders), count: 3}];
+  else if (ad === 'WED') pools = [{lib: filterLib(EXERCISE_LIBRARY.legs), count: 6}];
+  else if (ad === 'THU') pools = [{lib: filterLib(EXERCISE_LIBRARY.arms), count: 4}, {lib: filterLib(EXERCISE_LIBRARY.core), count: 3}];
+  else pools = [{lib: filterLib(EXERCISE_LIBRARY.back), count: 3}, {lib: filterLib(EXERCISE_LIBRARY.chest), count: 3}]; 
+
+  // 3. Build the workout
   let exercises = [];
   pools.forEach(p => {
+     let selected = p.lib.slice(0, p.count).map(ex => {
+         return { n: ex.name, s: ex.sets || 4, r: ex.reps + " — " + ex.notes };
+     });
+     exercises = exercises.concat(selected);
+  });
+
+  const dayNames = {MON:"PULL DAY", TUE:"PUSH DAY", WED:"LEG DAY", THU:"ARMS & CORE", FRI:"FULL BODY COMBAT"};
+  return {
+    name: dayNames[ad] || "WORKOUT",
+    type: "STANDARD REGIMEN",
+    tag: "Equipment: " + equip.toUpperCase(),
+    warmup: "3 mins jump rope + dynamic arm swings + hip openers",
+    cooldown: "Hold deep stretches for 60s. Control breathing.",
+    exercises: exercises
+  };
+}
+
+function generateAIWorkout(ad) {
+  if(!EXERCISE_LIBRARY || !EXERCISE_LIBRARY.back) return {name:"Fallback",type:"Rest",tag:"",warmup:"",cooldown:"",exercises:[]};
+
+  // 1. Core Muscle Group
+  let musclePools = [];
+  if (ad === 'MON' || ad === 'FRI') musclePools = [{lib: EXERCISE_LIBRARY.back, count: 3}, {lib: EXERCISE_LIBRARY.arms, count: 2}];
+  else if (ad === 'TUE') musclePools = [{lib: EXERCISE_LIBRARY.chest, count: 3}, {lib: EXERCISE_LIBRARY.shoulders, count: 2}];
+  else if (ad === 'WED') musclePools = [{lib: EXERCISE_LIBRARY.legs, count: 4}, {lib: EXERCISE_LIBRARY.core, count: 1}];
+  else if (ad === 'THU') musclePools = [{lib: EXERCISE_LIBRARY.arms, count: 3}, {lib: EXERCISE_LIBRARY.core, count: 2}];
+  else musclePools = [{lib: EXERCISE_LIBRARY.legs, count: 3}];
+
+  // 2. FORCE SELF-DEFENSE & MMA CONDITIONING INTO EVERY AI WORKOUT
+  musclePools.push({lib: EXERCISE_LIBRARY.conditioning, count: 2}); // 2 Brutal cardio/conditioning rounds
+  musclePools.push({lib: EXERCISE_LIBRARY.bjj, count: 2}); // 2 Tactical ground/movement drills
+
+  let exercises = [];
+  musclePools.forEach(p => {
+    if(!p.lib) return;
     let shuffled = [...p.lib].sort(() => 0.5 - Math.random());
     let selected = shuffled.slice(0, p.count).map(ex => {
-      let sets = Math.floor(Math.random() * 3) + 3; // 3 to 5 sets
-      let repTargets = ["5-8 heavy", "10-12 strict", "15-20 burnout", "Max reps", "Myo-reps", "Drop set"];
+      let sets = Math.floor(Math.random() * 2) + 3; // 3 to 4 sets
+      let repTargets = ["5-8 heavy", "10-12 strict", "15-20 burnout", "Max reps", "Drop set", "Explosive speed"];
       let r = repTargets[Math.floor(Math.random() * repTargets.length)];
-      return { n: ex.name, s: sets, r: r + " — " + ex.notes };
+      
+      // If it's a fighter conditioning or BJJ move, make it a 1-minute combat round
+      if (p.lib === EXERCISE_LIBRARY.conditioning || p.lib === EXERCISE_LIBRARY.bjj) {
+         r = "1 min AMRAP (As Many Reps As Possible)";
+         sets = 3;
+      }
+      
+      return { n: (p.lib === EXERCISE_LIBRARY.bjj ? "🥋 " : (p.lib === EXERCISE_LIBRARY.conditioning ? "🥊 " : "")) + ex.name, s: sets, r: r + " — " + ex.notes };
     });
     exercises = exercises.concat(selected);
   });
   
   return {
-    name: "🎲 AI SHOCK PROTOCOL",
-    type: "MUSCLE CONFUSION",
-    tag: "Randomized Sets, Reps, and Movements",
-    warmup: "5 min jump rope + dynamic arm/leg swings + 1 min plank",
-    cooldown: "Focus on the tightest muscles today. Hold stretches 60s each.",
+    name: "🎲 ELITE FIGHTER SHOCK",
+    type: "TACTICAL MMA CIRCUIT",
+    tag: exercises.length + " Combat-Focused Rounds. No Quit.",
+    warmup: "5 min jump rope + dynamic arm/leg swings + shadowboxing flow",
+    cooldown: "Hold deep stretches. Focus on breath control and heart rate recovery.",
     exercises: exercises
   };
 }
@@ -1759,15 +1817,10 @@ function generateAIWorkout(ad) {
 function selectAIWorkout() {
   const today = UI.activeDate;
   const dd = getDD(today);
-  if (!dd.aiWorkout) {
-    dd.aiWorkout = generateAIWorkout(UI.activeDay);
-    saveDB();
-  }
+  dd.aiWorkout = generateAIWorkout(UI.activeDay); // Force new generation every time
+  saveDB();
   selectEquip('ai_random');
 }
-// ═══════════════════════════════════════════════════════════
-// WORKOUT TAB
-// ═══════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════
 // WORKOUT TAB
 // ═══════════════════════════════════════════════════════════
@@ -1873,22 +1926,26 @@ function renderWorkoutTab(today,dd){
       </div>
     `;
   }
-
-  // ─── WORKOUT GENERATION (4-PHASES) ───
+// ─── WORKOUT GENERATION (4-PHASES) ───
   let day, equipData, equipColor, exKey;
+  
   if(equip === 'ai_random') {
-    if (!dd.aiWorkout) dd.aiWorkout = generateAIWorkout(ad);
+    if (!dd.aiWorkout || dd.aiWorkout.exercises.length < 8) dd.aiWorkout = generateAIWorkout(ad);
     day = dd.aiWorkout;
     equipData = {label: '🎲 AI SHOCK'};
     equipColor = '#ff0055';
     exKey = 'ai_random-'+dayIdx;
   } else {
-    equipData = FIGHTERS[equip];
-    day = equipData.days[dayIdx];
-    equipColor = equipData.color;
+    // Dynamically build the standard workout from the Master Library using selected equipment!
+    if(!dd['std_'+equip+'_'+ad]) dd['std_'+equip+'_'+ad] = generateStandardWorkout(ad, equip);
+    day = dd['std_'+equip+'_'+ad];
+    
+    const eqColors = {gym:'#00ff88', bowflex:'#ff6b35', bands:'#ffcc00', bodyweight:'#6699ff'};
+    equipData = {label: equip.toUpperCase()};
+    equipColor = eqColors[equip] || '#00ff88';
     exKey = equip+'-'+dayIdx;
   }
-
+ 
   const exDoneSelected=day.exercises.filter((_,i)=>dd.ex[exKey+'-'+i]).length;
   const exDone = equip === 'ai_random' ? exDoneSelected : countCompletedExercisesAnyEquip(dd,dayIdx);
   const bfDone=BODY_FIX.filter((_,i)=>dd.bf['bf-'+dayIdx+'-'+i]).length;
