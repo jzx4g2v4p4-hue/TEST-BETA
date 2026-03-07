@@ -1563,311 +1563,464 @@ function render(){
 }
 
 // ═══════════════════════════════════════════════════════════
+// TACTICAL AI & LIBRARY
+// ═══════════════════════════════════════════════════════════
+window.EXERCISE_LIBRARY = {
+  chest: [
+    {name:"Standard Push-Ups",sets:4,reps:"max",notes:"Perfect form foundation"},
+    {name:"Clap Push-Ups",sets:4,reps:"8",notes:"Explosive plyometric"},
+    {name:"Diamond Push-Ups",sets:4,reps:"15",notes:"Triceps focus"},
+    {name:"Incline DB Press",sets:4,reps:"8-12",notes:"Upper chest focus"},
+    {name:"DB Floor Press",sets:4,reps:"10",notes:"Heavy chest power"}
+  ],
+  back: [
+    {name:"Pull-Ups",sets:4,reps:"max",notes:"King of bodyweight pulling"},
+    {name:"Renegade Rows",sets:4,reps:"10 each",notes:"Core and back"},
+    {name:"Bent-Over DB Rows",sets:4,reps:"10",notes:"Heavy row"},
+    {name:"Superman Pulls",sets:4,reps:"20",notes:"Prone pulling"}
+  ],
+  shoulders: [
+    {name:"Pike Push-Ups",sets:4,reps:"12",notes:"Shoulder focus"},
+    {name:"DB Push Press",sets:4,reps:"8",notes:"Explosive overhead"},
+    {name:"Lateral Raises",sets:4,reps:"15",notes:"Side delt isolation"},
+    {name:"Reverse Flyes",sets:4,reps:"15",notes:"Rear delt isolation"}
+  ],
+  arms: [
+    {name:"Alternating DB Curls",sets:4,reps:"10 each",notes:"Heavy bicep"},
+    {name:"Hammer Curls",sets:4,reps:"12",notes:"Forearm power"},
+    {name:"Overhead Tricep Ext",sets:4,reps:"10",notes:"Full stretch"},
+    {name:"Chair Dips",sets:4,reps:"20",notes:"Compound tricep"}
+  ],
+  legs: [
+    {name:"Jump Squats",sets:4,reps:"20",notes:"Explosive power"},
+    {name:"Bulgarian Split Squats",sets:4,reps:"12 each",notes:"Unilateral power"},
+    {name:"Goblet Squats",sets:4,reps:"12",notes:"Primary squat"},
+    {name:"DB Hip Thrusts",sets:4,reps:"15",notes:"Maximum glute squeeze"},
+    {name:"Walking Lunges",sets:4,reps:"20 steps",notes:"Dynamic leg power"}
+  ],
+  core: [
+    {name:"Russian Twists",sets:4,reps:"30",notes:"Explosive rotational"},
+    {name:"Plank",sets:3,reps:"60 sec",notes:"Core stability"},
+    {name:"V-Ups",sets:4,reps:"20",notes:"Full ab contraction"},
+    {name:"Mountain Climbers",sets:3,reps:"40 sec",notes:"Dynamic core"}
+  ],
+  conditioning: [
+    {name:"Burpees",sets:3,reps:"15",notes:"Full body finisher"},
+    {name:"Shadowboxing Rounds",sets:3,reps:"3 min",notes:"Footwork and flow"},
+    {name:"High Knees",sets:3,reps:"45 sec",notes:"Max heart rate"},
+    {name:"Sprawl Drills",sets:3,reps:"10",notes:"Takedown defense reaction"}
+  ],
+  bjj: [
+    {name:"Hip Escape (Shrimping)",sets:3,reps:"20",notes:"Fundamental mat movement"},
+    {name:"Technical Stand-up",sets:3,reps:"10 each",notes:"Base recovery"},
+    {name:"Bridge and Roll",sets:3,reps:"15",notes:"Upa escape mechanic"},
+    {name:"Guard Retention Drill",sets:3,reps:"1 min",notes:"Leg pummeling"}
+  ],
+  flexibility: [
+    {name:"Couch Stretch",sets:2,reps:"60 sec each",notes:"Deep hip flexor release"},
+    {name:"Pancake Stretch",sets:3,reps:"45 sec",notes:"Seated wide straddle fold"},
+    {name:"Frog Stretch",sets:2,reps:"60 sec",notes:"Inner thigh and groin opening"},
+    {name:"Lizard Stretch",sets:2,reps:"45 sec each",notes:"Hip opener from lunge"},
+    {name:"Middle Split Progression",sets:3,reps:"30 sec",notes:"Isometric holds near max range"}
+  ],
+  mewing: [
+    {name:"Tongue Posture Hold",sets:5,reps:"1 min",notes:"Entire tongue pressed flat to roof of mouth"},
+    {name:"Chin Tucks",sets:3,reps:"15",notes:"Neck posture correction (double chin pull)"},
+    {name:"Neck Posture Alignment",sets:3,reps:"30 sec",notes:"Wall sit with back of head touching"},
+    {name:"Breathing Posture Drill",sets:3,reps:"10 breaths",notes:"Diaphragmatic breathing"}
+  ]
+};
+
+function generateAIWorkout(ad) {
+  let musclePools = [];
+  let lib = window.EXERCISE_LIBRARY;
+  if (ad === 'MON' || ad === 'FRI') musclePools = [{lib: lib.back, count: 3}, {lib: lib.arms, count: 2}];
+  else if (ad === 'TUE') musclePools = [{lib: lib.chest, count: 3}, {lib: lib.shoulders, count: 2}];
+  else if (ad === 'WED') musclePools = [{lib: lib.legs, count: 4}, {lib: lib.core, count: 1}];
+  else if (ad === 'THU') musclePools = [{lib: lib.arms, count: 3}, {lib: lib.core, count: 2}];
+  else musclePools = [{lib: lib.legs, count: 3}];
+
+  musclePools.push({lib: lib.conditioning, count: 2});
+  musclePools.push({lib: lib.bjj, count: 2});
+
+  let exercises = [];
+  musclePools.forEach(p => {
+    if(!p.lib) return;
+    let shuffled = [...p.lib].sort(() => 0.5 - Math.random());
+    let selected = shuffled.slice(0, p.count).map(ex => {
+      let sets = Math.floor(Math.random() * 2) + 3;
+      let repTargets = ["5-8 heavy", "10-12 strict", "15-20 burnout", "Max reps", "Drop set", "Explosive speed"];
+      let r = repTargets[Math.floor(Math.random() * repTargets.length)];
+      if (p.lib === lib.conditioning || p.lib === lib.bjj) {
+         r = "1 min AMRAP";
+         sets = 3;
+      }
+      return { n: (p.lib === lib.bjj ? "🥋 " : (p.lib === lib.conditioning ? "🥊 " : "")) + (ex.name||"Drill"), s: sets, r: r + " — " + (ex.notes||"") };
+    });
+    exercises = exercises.concat(selected);
+  });
+  
+  return {
+    name: "🎲 ELITE FIGHTER SHOCK",
+    type: "TACTICAL MMA CIRCUIT",
+    tag: exercises.length + " Combat-Focused Rounds. No Quit.",
+    warmup: "5 min jump rope + dynamic arm/leg swings + shadowboxing flow",
+    cooldown: "Hold deep stretches. Focus on breath control and heart rate recovery.",
+    exercises: exercises
+  };
+}
+
+function selectAIWorkout() {
+  const today = UI.activeDate;
+  const dd = getDD(today);
+  dd.aiWorkout = generateAIWorkout(UI.activeDay); 
+  selectEquip('ai_random'); 
+}
+
+// ═══════════════════════════════════════════════════════════
 // WORKOUT TAB
 // ═══════════════════════════════════════════════════════════
 function renderWorkoutTab(today,dd){
+  if (!dd.ex) dd.ex = {};
+  if (!dd.w) dd.w = {};
+  if (!dd.bf) dd.bf = {};
+  if (!dd.rec) dd.rec = {};
+
   const ad=UI.activeDay;
   const equip=UI.activeEquip;
 
-  // Day tabs row
-  const dayTabsHTML=`
-    ${renderWorkoutHomeHeader(today,dd)}
-    ${renderCardinalAssumptions()}
-    <div class="day-tabs">
-      ${ALL_DAYS.map(d=>{
-        let cls='day-tab';
-        if(d==='SUN') cls+=' rest-day';
-        else if(d==='FRI') cls+=' recovery-day';
-        else if(d==='SAT') cls+=' hiit-day';
-        if(ad===d) cls+=' active';
-        return `<button class="${cls}" onclick="switchDay('${d}')">${d}</button>`;
-      }).join('')}
-    </div>`;
+  let dayTabsHTML = "";
+  if(typeof renderWorkoutHomeHeader === 'function') dayTabsHTML += renderWorkoutHomeHeader(today,dd);
+  if(typeof renderCardinalAssumptions === 'function') dayTabsHTML += renderCardinalAssumptions();
+  
+  dayTabsHTML += '<div class="day-tabs">';
+  let daysArr = typeof ALL_DAYS !== 'undefined' ? ALL_DAYS : ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  for(let i=0; i<daysArr.length; i++){
+    let d = daysArr[i];
+    let cls = 'day-tab';
+    if(d==='SUN') cls+=' rest-day';
+    else if(d==='FRI') cls+=' recovery-day';
+    else if(d==='SAT') cls+=' hiit-day';
+    if(ad===d) cls+=' active';
+    dayTabsHTML += '<button class="'+cls+'" onclick="switchDay(\''+d+'\')">'+d+'</button>';
+  }
+  dayTabsHTML += '</div>';
 
-  if(ad==='SAT') return dayTabsHTML + renderSaturday(today,dd);
-  if(ad==='SUN') return dayTabsHTML + renderSunday(today,dd);
+  if(ad==='SAT' && typeof renderSaturday === 'function') return dayTabsHTML + renderSaturday(today,dd);
+  if(ad==='SUN' && typeof renderSunday === 'function') return dayTabsHTML + renderSunday(today,dd);
 
-  // FRI optional
-  const isFriOptional = (ad==='FRI');
-
-  // MON–FRI workout days
   const dayIdx=['MON','TUE','WED','THU','FRI'].indexOf(ad);
   if(dayIdx<0) return dayTabsHTML;
 
-  // Equipment selector — shown if no equipment chosen yet today OR user wants to change
+  // ─── COMMAND CENTER UI ───
   if(!equip){
-    const types=['PULL','PUSH','LEGS','ARMS + CORE','OPTIONAL PULL'];
-    const typeColors=['#00ff88','#ff6b35','#ffcc00','#6699ff','#00ff88'];
-    const typeIcons=['🔼','💥','🦵','💪','🔼'];
+    let stats = JSON.parse(localStorage.getItem("weeklyStats")) || {pull:0,push:0,legs:0,arms:0};
+    const recommendation = typeof getDayType === 'function' ? getDayType(typeof todayDow==='function'?todayDow():1) : 'PULL';
+
     const equipOptions=[
-      {k:'gym',      icon:'🏋️', label:'FULL GYM',    sub:'Barbell · Cable · Everything',  color:'#00ff88'},
-      {k:'bowflex',  icon:'🏠', label:'BOWFLEX',      sub:'Adjustable dumbbells 5-52lbs',  color:'#ff6b35'},
-      {k:'bands',    icon:'🎽', label:'BANDS',         sub:'Resistance bands only',         color:'#ffcc00'},
-      {k:'bodyweight',icon:'💪',label:'BODYWEIGHT',   sub:'No equipment needed',           color:'#6699ff'},
+      {k:'gym',      icon:'🏋️', label:'FULL GYM'},
+      {k:'bowflex',  icon:'🏠', label:'BOWFLEX'},
+      {k:'bands',    icon:'🎽', label:'BANDS'},
+      {k:'bodyweight',icon:'💪',label:'BODYWEIGHT'}
     ];
     let btnHTML='';
-    equipOptions.forEach(function(e){
-      btnHTML+='<button data-equip="'+e.k+'" class="equip-btn" style="padding:18px 12px;background:var(--card);border:2px solid #2a2a2a;border-radius:14px;cursor:pointer;text-align:center">'
-        +'<div style="font-size:32px;margin-bottom:8px">'+e.icon+'</div>'
-        +'<div style="font-size:15px;font-family:Impact,sans-serif;letter-spacing:2px;color:'+e.color+';margin-bottom:4px">'+e.label+'</div>'
-        +'<div style="font-size:10px;color:#555">'+e.sub+'</div>'
-        +'</button>';
-    });
-    return dayTabsHTML
-      +'<div style="padding:20px 16px">'
-        +'<div style="text-align:center;margin-bottom:6px">'
-          +'<div style="font-size:11px;letter-spacing:3px;color:var(--text3);font-family:Impact,sans-serif">'+(ad==='FRI'?'OPTIONAL — ':'')+'TODAY IS</div>'
-          +'<div style="font-size:36px;font-family:Impact,sans-serif;letter-spacing:3px;color:'+typeColors[dayIdx]+'">'+typeIcons[dayIdx]+' '+types[dayIdx]+'</div>'
-          +(ad==='FRI'?'<div style="font-size:11px;color:var(--text3);margin-top:4px">No penalty if you skip. But the men who show up on Fridays are built different.</div>':'')
-        +'</div>'
-        +'<div style="font-size:13px;letter-spacing:2px;color:var(--text2);text-align:center;margin:20px 0 12px;font-family:Impact,sans-serif">WHAT DO YOU HAVE TODAY?</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+btnHTML+'</div>'
-        +(ad==='FRI'?'<button data-day="SAT" class="switch-day-btn" style="width:100%;padding:14px;background:none;border:1px solid #2a2a2a;border-radius:10px;color:var(--text3);font-size:12px;font-family:Impact,sans-serif;letter-spacing:2px;cursor:pointer">SKIP TODAY — GO TO SATURDAY</button>':'')
-      +'</div>';
+    for(let i=0; i<equipOptions.length; i++){
+      let e = equipOptions[i];
+      btnHTML += '<button onclick="UI.activeSpecial=null;selectEquip(\''+e.k+'\')" style="padding:14px 12px;background:rgba(16,28,46,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s">';
+      btnHTML += '<div style="font-size:28px;margin-bottom:6px">'+e.icon+'</div>';
+      btnHTML += '<div style="font-size:12px;font-family:Impact,sans-serif;letter-spacing:1px;color:#fff;margin-bottom:2px">'+e.label+'</div>';
+      btnHTML += '</button>';
+    }
+
+    const specialOptions=[
+      {k:'conditioning', icon:'🥊', label:'CONDITIONING'},
+      {k:'bjj', icon:'🥋', label:'BJJ DRILLS'},
+      {k:'flexibility', icon:'🧘‍♂️', label:'FLEXIBILITY'},
+      {k:'mewing', icon:'🤫', label:'MEWING'}
+    ];
+    let specialHTML = '';
+    for(let i=0; i<specialOptions.length; i++){
+      let e = specialOptions[i];
+      specialHTML += '<button onclick="UI.activeEquip=null;UI.activeSpecial=\''+e.k+'\';render();" style="padding:14px 12px;background:rgba(20,30,50,0.6);border:1px solid rgba(0,212,255,0.2);border-radius:14px;cursor:pointer;text-align:center;transition:all 0.2s">';
+      specialHTML += '<div style="font-size:28px;margin-bottom:6px">'+e.icon+'</div>';
+      specialHTML += '<div style="font-size:12px;font-family:Impact,sans-serif;letter-spacing:1px;color:#00D4FF;margin-bottom:2px">'+e.label+'</div>';
+      specialHTML += '</button>';
+    }
+
+    const targetMap = {'PULL':'MON', 'PUSH':'TUE', 'LEGS':'WED', 'ARMS+CORE':'THU'};
+    const recDay = targetMap[recommendation] || 'MON';
+
+    if(UI.activeSpecial){
+       return renderSpecialModuleTab(today, dd, UI.activeSpecial, dayTabsHTML);
+    }
+
+    let cmdHTML = dayTabsHTML + '<div style="padding:16px">';
+    cmdHTML += '<div style="text-align:center;margin-bottom:24px"><div style="font-size:11px;letter-spacing:3px;color:var(--text3);font-family:Impact,sans-serif">' + (typeof dateLabel==='function'?dateLabel(today):today) + '</div><div style="font-size:24px;font-family:Impact,sans-serif;color:var(--cyan);letter-spacing:2px;margin-top:4px">WORKOUT CONFIGURATION</div></div>';
+    
+    cmdHTML += '<div style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:rgba(10,20,40,0.8);border:1px solid var(--border2);font-family:Impact,sans-serif;font-size:12px;text-align:center">';
+    cmdHTML += '<div style="font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px;">WEEKLY BALANCE</div>';
+    cmdHTML += '<div style="display:flex;justify-content:space-around;color:#fff">';
+    cmdHTML += '<div>Pull ' + (stats.pull>0?'<span style="color:#00ff88">✓</span>':'❌') + '</div>';
+    cmdHTML += '<div>Push ' + (stats.push>0?'<span style="color:#00ff88">✓</span>':'❌') + '</div>';
+    cmdHTML += '<div>Legs ' + (stats.legs>0?'<span style="color:#00ff88">✓</span>':'❌') + '</div>';
+    cmdHTML += '<div>Arms ' + (stats.arms>0?'<span style="color:#00ff88">✓</span>':'❌') + '</div>';
+    cmdHTML += '</div></div>';
+
+    cmdHTML += '<div style="margin-bottom:24px;padding:16px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,255,136,0.05));border:1px solid rgba(0,212,255,0.3);border-radius:14px;">';
+    cmdHTML += '<div style="font-size:10px;letter-spacing:2px;color:var(--cyan);font-family:Impact,sans-serif;margin-bottom:12px">STEP 1: SELECT YOUR TARGET</div>';
+    cmdHTML += '<button onclick="switchDay(\''+recDay+'\')" style="width:100%;padding:14px;background:'+(ad===recDay?'rgba(0,255,136,0.2)':'var(--card)')+';border:1px solid '+(ad===recDay?'#00ff88':'#333')+';border-radius:10px;color:#fff;font-family:Impact,sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;margin-bottom:8px;text-align:left;display:flex;justify-content:space-between;align-items:center"><span>🔥 DO RECOMMENDED: '+recommendation+'</span><span style="color:#00ff88;font-size:16px">'+(ad===recDay?'✓':'')+'</span></button>';
+    
+    cmdHTML += '<div style="font-size:10px;color:var(--text3);margin:16px 0 8px">OR OVERRIDE TARGET MUSCLE:</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">';
+    let mArr = [{d:'MON', l:'PULL'},{d:'TUE', l:'PUSH'},{d:'WED', l:'LEGS'},{d:'THU', l:'ARMS'}];
+    for(let i=0; i<mArr.length; i++){
+      let m = mArr[i];
+      cmdHTML += '<button onclick="switchDay(\''+m.d+'\')" style="padding:10px 4px;background:'+(ad===m.d?'var(--cyan)':'var(--card)')+';border:1px solid '+(ad===m.d?'var(--cyan)':'#333')+';border-radius:8px;color:'+(ad===m.d?'#000':'#fff')+';font-family:Impact,sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s">'+m.l+'</button>';
+    }
+    cmdHTML += '</div></div>';
+
+    cmdHTML += '<div style="padding:16px;background:rgba(10,18,30,0.8);border:1px solid rgba(255,255,255,0.05);border-radius:14px;margin-bottom:16px">';
+    cmdHTML += '<div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif;margin-bottom:12px">STEP 2: SELECT EQUIPMENT</div>';
+    cmdHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + btnHTML + '</div>';
+    cmdHTML += '<div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif;margin:16px 0 12px">OR SELECT A SPECIALIZED MODULE:</div>';
+    cmdHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + specialHTML + '</div></div>';
+
+    cmdHTML += '<button onclick="selectAIWorkout()" style="width:100%;padding:18px;background:linear-gradient(90deg,#ff0055,#ff8c00);border:1px solid rgba(255,255,255,0.2);border-radius:14px;color:#fff;font-family:Impact,sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:0 0 20px rgba(255,0,85,0.4);display:flex;align-items:center;justify-content:center;gap:10px"><span>🎲</span> AI SHOCK RANDOMIZER</button>';
+    cmdHTML += '</div>';
+    return cmdHTML;
   }
 
-  // Equipment selected — get the workout
-  const equipData = FIGHTERS[equip];
-  const day = equipData.days[dayIdx];
-  const equipColor = equipData.color;
-  const exKey = equip+'-'+dayIdx;
-  const exDoneSelected=day.exercises.filter((_,i)=>dd.ex[exKey+'-'+i]).length;
-  const exDone=countCompletedExercisesAnyEquip(dd,dayIdx);
-  const bfDone=BODY_FIX.filter((_,i)=>dd.bf['bf-'+dayIdx+'-'+i]).length;
-  const minReq=Math.min(day.exercises.length,DB.minExercises||5);
-  const totalItems=minReq+BODY_FIX.length;
-  const pct=Math.min(100,Math.round((Math.min(exDone,minReq)+bfDone)/totalItems*100));
-  const workoutCounted=Math.min(exDone,minReq)>=minReq;;
+  // ─── 4-PHASE GENERATION (Safely Extracted) ───
+  let day, equipData, equipColor, exKey;
+  if(equip === 'ai_random') {
+    if (!dd.aiWorkout || !dd.aiWorkout.exercises || dd.aiWorkout.exercises.length < 8) dd.aiWorkout = generateAIWorkout(ad);
+    day = dd.aiWorkout;
+    equipData = {label: '🎲 AI SHOCK'};
+    equipColor = '#ff0055';
+    exKey = 'ai_random-'+dayIdx;
+  } else {
+    equipData = (typeof FIGHTERS!=='undefined' && FIGHTERS[equip]) ? FIGHTERS[equip] : {label: String(equip).toUpperCase(), color: '#00ff88', days: []};
+    day = equipData.days[dayIdx] || {name: "REST", type: "REST", tag: "", warmup: "", cooldown: "", exercises: []};
+    equipColor = equipData.color || '#00ff88';
+    exKey = equip+'-'+dayIdx;
+  }
 
-  return dayTabsHTML + `
-    <div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">${day.type}</div>
-        <div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:${equipColor}">${day.name}</div>
-        <div style="font-size:11px;color:#666;margin-top:2px">${day.tag}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:3px">${exDoneSelected} done on this setup · ${exDone} total across all setups</div>
-      </div>
-      <button onclick="selectEquip(null)" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">${equipData.label}<br><span style="color:var(--text3);font-size:9px">TAP TO CHANGE</span></button>
-    </div>
+  const safeExercises = day.exercises || [];
+  const safeBodyFix = typeof BODY_FIX !== 'undefined' ? BODY_FIX : [];
 
-    <div class="info-box warm" style="cursor:pointer" onclick="toggleWarmup('${today}','wu-${equip}-${dayIdx}')">
-      <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'#333'};background:${dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
-        ${dd.w['wu-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
-      </div>
-      <span class="box-icon">🔥</span>
-      <div><div class="box-lbl">WARM-UP · TAP TO CHECK OFF</div><div class="box-txt" style="color:${dd.w['wu-'+equip+'-'+dayIdx]?'#444':'#00ff88'};${dd.w['wu-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.warmup}</div></div>
-    </div>
+  let exDoneSelected = 0;
+  for(let i=0; i<safeExercises.length; i++){ if(dd.ex[exKey+'-'+i]) exDoneSelected++; }
+  
+  const exDone = equip === 'ai_random' ? exDoneSelected : ((typeof countCompletedExercisesAnyEquip === 'function') ? countCompletedExercisesAnyEquip(dd,dayIdx) : exDoneSelected);
+  
+  let bfDone = 0;
+  for(let i=0; i<safeBodyFix.length; i++){ if(dd.bf['bf-'+dayIdx+'-'+i]) bfDone++; }
 
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 20px;font-size:10px;color:#555">
-      <span>REQUIRED: <span style="color:var(--accent);font-family:Impact,sans-serif">${minReq}/${day.exercises.length}</span></span>
-      <div style="display:flex;gap:4px"><button onclick="event.stopPropagation();setMinEx(${Math.max(3,minReq-1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">−</button><button onclick="event.stopPropagation();setMinEx(${Math.min(day.exercises.length,minReq+1)})" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">+</button></div>
-    </div>
-    <div class="prog-bar-wrap">
-     <div class="prog-bar-labels"><span>EXERCISES ${Math.min(exDone,minReq)}/${minReq} &middot; BODY FIX ${bfDone}/${BODY_FIX.length}</span><span style="color:${workoutCounted?'#00ff88':equipColor}">${pct}%${workoutCounted?' &#x2713;':''}</span></div>
-      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${pct}%;background:${workoutCounted?'#00ff88':equipColor}"></div></div>
-    </div>
+  const minReq = Math.min(safeExercises.length, (typeof DB !== 'undefined' && DB.minExercises ? DB.minExercises : 5)); 
+  const totalItems = minReq + safeBodyFix.length;
+  const pct = totalItems > 0 ? Math.min(100, Math.round((Math.min(exDone, minReq) + bfDone) / totalItems * 100)) : 0;
+  const workoutCounted = exDone >= minReq;
 
-    ${renderRestBar()}
+  let html = dayTabsHTML;
+  html += '<div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">';
+  html += '<div><div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">'+(day.type||'WORKOUT')+'</div>';
+  html += '<div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:'+equipColor+'">'+(day.name||'Regimen')+'</div>';
+  html += '<div style="font-size:11px;color:#666;margin-top:2px">'+(day.tag||'')+'</div>';
+  html += '<div style="font-size:10px;color:var(--text3);margin-top:3px">'+exDoneSelected+' done on this setup · '+exDone+' total across all setups</div></div>';
+  html += '<button onclick="selectEquip(null)" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">'+equipData.label+'<br><span style="color:var(--text3);font-size:9px">TAP TO CHANGE</span></button></div>';
 
-    <div style="margin:10px 20px 14px;background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-        <div style="font-size:11px;color:#666">Workout validation</div>
-        <div style="font-size:11px;color:${workoutCounted?'#00ff88':'#ff6b35'}">${workoutCounted?'Minimum met — counts for weekly score':'Need '+minReq+' completed exercises to count'}</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button onclick="submitWorkout('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='completed')?'#003d00':'rgba(0,60,0,0.2)'};border:1.5px solid #00ff88;border-radius:8px;color:#00ff88;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x2705; I WORKED OUT</button>
-        <button onclick="showOfficeModal('${today}',${dayIdx},'work')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-work')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x26A0; Can't make it &mdash; work</button>
-        <button onclick="showOfficeModal('${today}',${dayIdx},'school')" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='missed-school')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)'};border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x26A0; Can't make it &mdash; school</button>
-        <button onclick="showLazyModal('${today}',${dayIdx})" style="padding:8px 10px;background:rgba(255,45,85,0.12);border:1.5px solid #ff2d55;border-radius:8px;color:#ff2d55;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x1F534; I'M A LAZY LITTLE BITCH</button>
-        <button onclick="showSickModal('${today}',${dayIdx})" style="padding:8px 10px;background:${(dd.rec&&dd.rec['workout-status-'+dayIdx]==='sick')?'rgba(0,230,200,0.18)':'rgba(0,230,200,0.06)'};border:1px solid rgba(0,230,200,0.4);border-radius:8px;color:#00e6c8;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">&#x1F912; I'M SICK</button>
-      </div>
-      ${(function(){
-        var st = dd.rec&&dd.rec['workout-status-'+dayIdx];
-        var labels = {'completed':'&#x2705; Logged — full workout','completed-full-circuit':'&#x2705; Logged — 12-min circuit','completed-bare-minimum':'&#x26A1; Logged — bare minimum','completed-emergency-3min':'&#x1F6A8; Logged — 3-min emergency','missed-work':'&#x26A0; Excused — work commitment','missed-school':'&#x26A0; Excused — school commitment','sick':'&#x1F912; Logged — sick day rest','skipped-lazy':'&#x1F6AE; Skipped — no excuse'};
-        if(!st) return '<div style="font-size:10px;color:#555;margin-top:6px">Not yet logged today</div>';
-        var c = st.startsWith('completed')||st==='completed'?'#00ff88':st==='sick'?'#00e6c8':st.startsWith('missed')?'#ffcc00':'#ff4444';
-        return '<div style="font-size:10px;color:'+c+';margin-top:6px;font-family:Impact,sans-serif;letter-spacing:1px">'+(labels[st]||st)+'</div>';
-      })()}
-    </div>
-    <div class="ex-section" id="ex-section-main">
-      <div class="section-lbl">TODAY'S WORKOUT</div>
-      ${(()=>{
-        var allExercises = day.exercises.map(function(ex,i){return {ex:ex,i:i};});
-        var doneExes = allExercises.filter(function(o){return !!dd.ex[exKey+'-'+o.i];});
-        var remainExes = allExercises.filter(function(o){return !dd.ex[exKey+'-'+o.i];});
-        var allDoneNow = doneExes.length === day.exercises.length && day.exercises.length > 0;
+  html += '<div class="section-lbl" style="color:#ffcc00; padding:0 20px; margin-top:16px;">🟡 PHASE 1: WARM-UP</div>';
+  html += '<div class="info-box warm" style="cursor:pointer" onclick="toggleWarmup(\''+today+'\',\'wu-'+equip+'-'+dayIdx+'\')">';
+  html += '<div style="width:20px;height:20px;border-radius:4px;border:2px solid '+(dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'#333')+';background:'+(dd.w['wu-'+equip+'-'+dayIdx]?'#00ff88':'none')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">';
+  if(dd.w['wu-'+equip+'-'+dayIdx]) html += '<span style="color:#000;font-size:11px;font-weight:bold">✓</span>';
+  html += '</div><span class="box-icon">🔥</span><div><div class="box-lbl">WARM-UP · TAP TO CHECK OFF</div><div class="box-txt" style="color:'+(dd.w['wu-'+equip+'-'+dayIdx]?'#444':'#00ff88')+';'+(dd.w['wu-'+equip+'-'+dayIdx]?'text-decoration:line-through':'')+'">'+(day.warmup||'')+'</div></div></div>';
 
-        function renderSingleEx(obj){
-          var ex=obj.ex; var i=obj.i;
-          var key=exKey+'-'+i;
-          var isDone=!!dd.ex[key];
-          var isOpen=UI.openEx===key;
-          var noWeight=['plank','shadowbox','hold','stretch','couch','bug','jump','carry','interval','bound'].some(function(k){return ex.n.toLowerCase().includes(k);});
-          var isTimed=['battle rope','battle ropes','sled push','sled pull','farmer carry','farmer walk','jump rope','assault bike','rower','ski erg'].some(function(k){return ex.n.toLowerCase().includes(k);});
-          var timedVal=(dd.w&&dd.w[key+'-time'])||'';
-          var isSuperset = ex.n.includes(' + ') || ex.n.toLowerCase().includes('superset');
-          var supersetParts = isSuperset
-            ? ex.n.replace(/\s*\(superset.*?\)/i,'').split(' + ').map(function(p){return p.trim();})
-            : [ex.n];
-          function buildSummary(partIdx){
-            var rows=[];
-            for(var s=0;s<ex.s;s++){var sw=dd.w[key+'-p'+partIdx+'-s'+s];if(sw)rows.push('S'+(s+1)+':'+sw+'lb');}
-            return rows.join(' · ');
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 20px;font-size:10px;color:#555"><span>REQUIRED: <span style="color:var(--accent);font-family:Impact,sans-serif">'+minReq+'/'+safeExercises.length+'</span></span>';
+  html += '<div style="display:flex;gap:4px"><button onclick="event.stopPropagation();if(typeof setMinEx===\'function\')setMinEx('+Math.max(3,minReq-1)+')" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">−</button>';
+  html += '<button onclick="event.stopPropagation();if(typeof setMinEx===\'function\')setMinEx('+Math.min(safeExercises.length,minReq+1)+')" style="width:30px;height:26px;background:var(--card);border:1px solid var(--border2);border-radius:5px;color:#777;font-size:16px;cursor:pointer;line-height:1">+</button></div></div>';
+  
+  html += '<div class="prog-bar-wrap"><div class="prog-bar-labels"><span>EXERCISES '+Math.min(exDone,minReq)+'/'+minReq+' &middot; BODY FIX '+bfDone+'/'+safeBodyFix.length+'</span><span style="color:'+(workoutCounted?'#00ff88':equipColor)+'">'+pct+'%'+(workoutCounted?' ✓':'')+'</span></div>';
+  html += '<div class="prog-bar-track"><div class="prog-bar-fill" style="width:'+pct+'%;background:'+(workoutCounted?'#00ff88':equipColor)+'"></div></div></div>';
+
+  if(typeof renderRestBar === 'function') html += renderRestBar();
+
+  // Safe Accountability Buttons
+  let st = dd.rec && dd.rec['workout-status-'+dayIdx];
+  let statusText = '<div style="font-size:10px;color:#555;margin-top:6px">Not yet logged today</div>';
+  if(st) {
+    let labels = {'completed':'✅ Logged — full workout','completed-full-circuit':'✅ Logged — 12-min circuit','completed-bare-minimum':'⚡ Logged — bare minimum','completed-emergency-3min':'🚨 Logged — 3-min emergency','missed-work':'⚠️ Excused — work commitment','missed-school':'⚠️ Excused — school commitment','sick':'🤒 Logged — sick day rest','skipped-lazy':'🚫 Skipped — no excuse'};
+    let stColor = st.indexOf('completed')===0 ? '#00ff88' : (st==='sick' ? '#00e6c8' : (st.indexOf('missed')===0 ? '#ffcc00' : '#ff4444'));
+    statusText = '<div style="font-size:10px;color:'+stColor+';margin-top:6px;font-family:Impact,sans-serif;letter-spacing:1px">'+(labels[st]||st)+'</div>';
+  }
+
+  html += '<div style="margin:10px 20px 14px;background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:12px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-size:11px;color:#666">Workout validation</div><div style="font-size:11px;color:'+(workoutCounted?'#00ff88':'#ff6b35')+'">'+(workoutCounted?'Minimum met — counts for weekly score':'Need '+minReq+' completed exercises to count')+'</div></div>';
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">';
+  html += '<button onclick="if(typeof submitWorkout===\'function\')submitWorkout(\''+today+'\','+dayIdx+')" style="padding:8px 10px;background:'+((st==='completed')?'#003d00':'rgba(0,60,0,0.2)')+';border:1.5px solid #00ff88;border-radius:8px;color:#00ff88;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">✅ I WORKED OUT</button>';
+  html += '<button onclick="if(typeof showOfficeModal===\'function\')showOfficeModal(\''+today+'\','+dayIdx+',\'work\')" style="padding:8px 10px;background:'+((st==='missed-work')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)')+';border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">⚠️ Can\'t make it — work</button>';
+  html += '<button onclick="if(typeof showOfficeModal===\'function\')showOfficeModal(\''+today+'\','+dayIdx+',\'school\')" style="padding:8px 10px;background:'+((st==='missed-school')?'rgba(255,204,0,0.18)':'rgba(255,204,0,0.06)')+';border:1px solid rgba(255,204,0,0.4);border-radius:8px;color:#ffcc00;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">⚠️ Can\'t make it — school</button>';
+  html += '<button onclick="if(typeof showLazyModal===\'function\')showLazyModal(\''+today+'\','+dayIdx+')" style="padding:8px 10px;background:rgba(255,45,85,0.12);border:1.5px solid #ff2d55;border-radius:8px;color:#ff2d55;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">🔴 I\'M A LAZY LITTLE BITCH</button>';
+  html += '<button onclick="if(typeof showSickModal===\'function\')showSickModal(\''+today+'\','+dayIdx+')" style="padding:8px 10px;background:'+((st==='sick')?'rgba(0,230,200,0.18)':'rgba(0,230,200,0.06)')+';border:1px solid rgba(0,230,200,0.4);border-radius:8px;color:#00e6c8;font-size:11px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">🤒 I\'M SICK</button></div>';
+  html += statusText;
+  html += '</div>';
+
+  // Exercises
+  html += '<div class="ex-section" id="ex-section-main"><div class="section-lbl" style="color:#ff4444; margin-top:20px;">🔴 PHASE 2: LIFTING REGIMEN</div>';
+  
+  let doneExes = []; let remainExes = [];
+  for(let i=0; i<safeExercises.length; i++){
+    if(dd.ex[exKey+'-'+i]) doneExes.push({ex:safeExercises[i], i:i});
+    else remainExes.push({ex:safeExercises[i], i:i});
+  }
+
+  function getSingleExHTML(obj){
+    let ex=obj.ex; let i=obj.i; let key=exKey+'-'+i; let isDone=!!dd.ex[key]; let isOpen=UI.openEx===key;
+    let exName = ex.n || 'Exercise'; let exReps = ex.r || '10'; let exSets = ex.s || 3;
+    let noWeight=['plank','shadowbox','hold','stretch','couch','bug','jump','carry','interval','bound'].some(k=>exName.toLowerCase().indexOf(k)>=0);
+    let isTimed=['battle rope','battle ropes','sled push','sled pull','farmer carry','farmer walk','jump rope','assault bike','rower','ski erg'].some(k=>exName.toLowerCase().indexOf(k)>=0);
+    let timedVal=(dd.w && dd.w[key+'-time'])||'';
+    let isSuperset = exName.indexOf(' + ')>=0 || exName.toLowerCase().indexOf('superset')>=0;
+    let supersetParts = isSuperset ? exName.replace(/\s*\(superset.*?\)/i,'').split(' + ').map(p=>p.trim()) : [exName];
+    
+    let allWeightSummary = supersetParts.map((_,pi)=>{
+      let rows=[]; for(let s=0;s<exSets;s++){ let sw=dd.w[key+'-p'+pi+'-s'+s]; if(sw) rows.push('S'+(s+1)+':'+sw+'lb'); }
+      return rows.join(' · ');
+    }).filter(Boolean).join(' | ');
+
+    let str = '<div class="ex-item '+(isDone?'done ':'')+(isTimed?'timed-item':'')+'" style="'+(isDone?'opacity:0.88;':'')+'"><div class="ex-top">';
+    str += '<div class="ex-check '+(isDone?'checked ':'')+(isTimed?'timed-check':'')+'" onclick="toggleEx(\''+key+'\',\'ex\')"></div>';
+    str += '<div class="ex-info" onclick="toggleWeight(\''+key+'\')"><div class="ex-name">'+(typeof weightProgressAlert==='function'?weightProgressAlert(equip,dayIdx,i):'')+(isSuperset?'🔄 SUPERSET':'')+(isSuperset?'<br>':'')+supersetParts.join('<br>+ ')+'</div>';
+    if(isTimed) str += '<div class="ex-note" style="font-size:11px;color:'+(timedVal?'var(--accent)':'#555')+'">'+(timedVal?'⏱ '+timedVal+'s logged':exSets+' sets &middot; '+exReps)+'</div>';
+    else str += '<div class="ex-note" style="font-size:11px;color:'+(allWeightSummary?'var(--accent)':'#555')+'">'+(allWeightSummary||exSets+' sets &middot; tap to log weights')+'</div>';
+    str += '</div><div class="ex-reps-badge">'+(isTimed?'⏱':exSets+'&times;'+exReps)+'</div></div>';
+
+    if(isTimed){
+      str += '<div class="ex-weight '+(isOpen?'open':'')+'"><div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG TIME PER SET</div>';
+      for(let s=0;s<exSets;s++){
+        str += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span><input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+key+'-time-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/><span style="font-size:12px;color:#555">sec</span></div>';
+      }
+      str += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved</div></div>';
+    } else if(!noWeight){
+      str += '<div class="ex-weight '+(isOpen?'open':'')+'">';
+      if(isSuperset){
+        for(let pi=0;pi<supersetParts.length;pi++){
+          str += '<div style="margin-bottom:14px"><div style="font-size:10px;letter-spacing:2px;color:#ff6b35;margin-bottom:8px;padding:4px 8px;background:#1a0e00;border-radius:4px;border-left:2px solid #ff6b35">'+supersetParts[pi].toUpperCase()+'</div>';
+          for(let s=0;s<exSets;s++){
+            let repTarget = exReps.split('/')[pi]||exReps;
+            str += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span><input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+key+'-p'+pi+'-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/><span style="font-size:12px;color:#555">lbs</span><input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+key+'-p'+pi+'-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/><span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+repTarget+' reps</span></div>';
           }
-          var allWeightSummary = supersetParts.map(function(_,pi){return buildSummary(pi);}).filter(Boolean).join(' | ');
-
-          var html = '';
-          html += '<div class="ex-item '+(isDone?'done ':'')+(isTimed?'timed-item':'')+'"  style="'+(isDone?'opacity:0.88;':'')+'">' ;
-          html += '<div class="ex-top">';
-          html += '<div class="ex-check '+(isDone?'checked ':'')+(isTimed?'timed-check':'')+'" onclick="toggleEx(\''+ key +'\',\'ex\')">'+'</div>';
-          html += '<div class="ex-info" onclick="toggleWeight(\''+ key +'\')">' ;
-          html += '<div class="ex-name">'+weightProgressAlert(equip,dayIdx,i)+(isSuperset?'&#x1F501; SUPERSET':'')+( isSuperset?'<br>':'')+ supersetParts.join('<br>+ ')+'</div>';
-          if(isTimed){
-            html += '<div class="ex-note" style="font-size:11px;color:'+(timedVal?'var(--accent)':'#555')+'">' + (timedVal ? '&#x23F1; '+timedVal+'s logged' : ex.s+' sets &middot; '+ex.r)+'</div>';
-          } else {
-            html += '<div class="ex-note" style="font-size:11px;color:'+(allWeightSummary?'var(--accent)':'#555')+ '">' + (allWeightSummary||ex.s+' sets &middot; tap to log weights')+'</div>';
-          }
-          html += '</div>'; // ex-info
-          html += '<div class="ex-reps-badge">'+(isTimed?'&#x23F1;':ex.s+'&times;'+ex.r)+'</div>';
-          html += '</div>'; // ex-top
-
-          // Weight/time log panel
-          if(isTimed){
-            html += '<div class="ex-weight '+(isOpen?'open':'')+'">' ;
-            html += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG TIME PER SET</div>';
-            for(var s=0;s<ex.s;s++){
-              html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
-              html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
-              html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-time-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
-              html += '<span style="font-size:12px;color:#555">sec</span>';
-              html += '</div>';
-            }
-            html += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved</div>';
-            html += '</div>';
-          } else if(!noWeight){
-            html += '<div class="ex-weight '+(isOpen?'open':'')+'">' ;
-            if(isSuperset){
-              supersetParts.forEach(function(part,pi){
-                html += '<div style="margin-bottom:14px">';
-                html += '<div style="font-size:10px;letter-spacing:2px;color:#ff6b35;margin-bottom:8px;padding:4px 8px;background:#1a0e00;border-radius:4px;border-left:2px solid #ff6b35">'+part.toUpperCase()+'</div>';
-                for(var s=0;s<ex.s;s++){
-                  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
-                  html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
-                  html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-p'+pi+'-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
-                  html += '<span style="font-size:12px;color:#555">lbs</span>';
-                  html += '<input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+ key +'-p'+pi+'-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/>';
-                  var repTarget = (ex.r.split('/')[pi]||ex.r);
-                  html += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+repTarget+' reps</span>';
-                  html += '</div>';
-                }
-                html += '</div>';
-              });
-            } else {
-              html += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG WEIGHT PER SET</div>';
-              for(var s=0;s<ex.s;s++){
-                html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
-                html += '<span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span>';
-                html += '<input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+ key +'-p0-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/>';
-                html += '<span style="font-size:12px;color:#555">lbs</span>';
-                html += '<input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+ key +'-p0-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/>';
-                html += '<span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+ex.r+' reps</span>';
-                html += '</div>';
-              }
-            }
-            html += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved &middot; view in calendar</div>';
-            html += '</div>';
-          }
-          html += '</div>'; // ex-item
-          return html;
+          str += '</div>';
         }
-
-        var html = '';
-        if(doneExes.length > 0){
-          html += '<div style="display:flex;align-items:center;gap:8px;padding:2px 0 8px;margin-top:2px"><span style="font-size:13px">&#x2705;</span><span style="font-size:10px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--green)">COMPLETED ('+doneExes.length+')</span><div style="flex:1;height:1px;background:rgba(0,255,136,0.2)"></div></div>';
-          html += doneExes.map(renderSingleEx).join('');
+      } else {
+        str += '<div style="padding:0 0 8px;font-size:10px;letter-spacing:2px;color:#555">LOG WEIGHT PER SET</div>';
+        for(let s=0;s<exSets;s++){
+          str += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:11px;color:var(--text3);width:40px;flex-shrink:0;letter-spacing:1px">SET '+(s+1)+'</span><input class="weight-input" type="number" inputmode="decimal" placeholder="0" data-key="'+key+'-p0-s'+s+'" style="flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 10px;color:#f0f0f0;font-size:15px;outline:none;"/><span style="font-size:12px;color:#555">lbs</span><input class="rep-input" type="number" inputmode="numeric" placeholder="reps" data-key="'+key+'-p0-s'+s+'-r" style="width:60px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:8px 6px;color:#f0f0f0;font-size:13px;outline:none;"/><span style="font-size:11px;color:var(--text3);width:28px;text-align:center">'+exReps+' reps</span></div>';
         }
-        if(remainExes.length > 0){
-          if(doneExes.length > 0){
-            html += '<div style="display:flex;align-items:center;gap:8px;padding:10px 0 8px"><span style="font-size:13px">&#x25FD;</span><span style="font-size:10px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--text2)">REMAINING ('+remainExes.length+')</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div></div>';
-          }
-          html += remainExes.map(renderSingleEx).join('');
-        }
-        if(allDoneNow){
-          html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid rgba(0,255,136,0.3);border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">&#x1F3C6;</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:var(--green)">WORKOUT COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fighter score +5 &middot; Every rep counts</div></div>';
-          setTimeout(function(){if(typeof launchConfetti==='function')launchConfetti();},100);
-        }
-        return html;
-      })()}
-    </div>
+      }
+      str += '<div style="font-size:10px;color:var(--text3);padding-top:2px;font-style:italic">Auto-saved</div></div>';
+    }
+    str += '</div>';
+    return str;
+  }
 
-    <div class="divider"></div>
-    <div class="divider"></div>
+  if(doneExes.length > 0){
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:2px 0 8px;margin-top:2px"><span style="font-size:13px">✅</span><span style="font-size:10px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--green)">COMPLETED ('+doneExes.length+')</span><div style="flex:1;height:1px;background:rgba(0,255,136,0.2)"></div></div>';
+    for(let i=0;i<doneExes.length;i++) html += getSingleExHTML(doneExes[i]);
+  }
+  if(remainExes.length > 0){
+    if(doneExes.length > 0) html += '<div style="display:flex;align-items:center;gap:8px;padding:10px 0 8px"><span style="font-size:13px">▫️</span><span style="font-size:10px;font-family:Impact,sans-serif;letter-spacing:2px;color:var(--text2)">REMAINING ('+remainExes.length+')</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div></div>';
+    for(let i=0;i<remainExes.length;i++) html += getSingleExHTML(remainExes[i]);
+  }
+  if(doneExes.length === safeExercises.length && safeExercises.length > 0){
+    html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid rgba(0,255,136,0.3);border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:var(--green)">WORKOUT COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fighter score +5 · Every rep counts</div></div>';
+    if(typeof window.launchConfetti==='function') setTimeout(window.launchConfetti,100);
+  }
 
-    <div class="ex-section" style="margin-top:4px">
-      <div class="section-lbl blue">🧠 BODY FIX — TECH NECK · SCIATICA · FLEXIBILITY</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:0 0 4px">Do these after your workout or during cooldown</div>
-      ${BODY_FIX.map((bf,i)=>{
-        const key=`bf-${dayIdx}-${i}`;
-        const isDone=!!dd.bf[key];
-        return `
-          <div class="ex-item body-item ${isDone?'done':''}" style="${isDone?'':'border-color:#1a1a2e'}">
-            <div class="ex-top" onclick="toggleBF('${key}')">
-              <div class="ex-check blue-check ${isDone?'checked':''}"></div>
-              <div class="ex-info">
-                <div class="ex-name">${bf.n}</div>
-                <div class="ex-note" style="color:#6699ff88">${bf.detail}</div>
-              </div>
-              <div class="ex-reps-badge blue">${bf.type==='techneck'?'🖥️':bf.type==='sciatica'?'⚡':bf.type==='flexibility'?'🦵':'🦵'}</div>
-            </div>
-          </div>`;
-      }).join('')}
-    </div>
+  html += '</div><div class="divider"></div><div class="section-lbl" style="color:#00D4FF; padding:0 20px; margin-top:20px;">🔵 PHASE 3: MARTIAL ARTS & FINISHERS</div>';
+  if(typeof renderWorkoutComboBlock === 'function') html += renderWorkoutComboBlock(today, dd, dayIdx);
+  
+  // Tactical Burnouts
+  html += '<div style="padding:0 20px"><div style="font-size:11px;color:var(--text3);margin-bottom:8px;margin-top:12px">Daily Combat Finisher (Auto-Generated)</div>';
+  let burnouts = [
+    {type: 'conditioning', ex: (window.EXERCISE_LIBRARY && window.EXERCISE_LIBRARY.conditioning) ? window.EXERCISE_LIBRARY.conditioning[dayIdx % window.EXERCISE_LIBRARY.conditioning.length] : {name:'Conditioning Drill',notes:'1 min AMRAP'}},
+    {type: 'bjj', ex: (window.EXERCISE_LIBRARY && window.EXERCISE_LIBRARY.bjj) ? window.EXERCISE_LIBRARY.bjj[dayIdx % window.EXERCISE_LIBRARY.bjj.length] : {name:'BJJ Solo Drill',notes:'1 min AMRAP'}}
+  ];
+  for(let i=0; i<burnouts.length; i++){
+    let item = burnouts[i]; let bkey = 'post-'+dayIdx+'-'+item.type; let isDone = !!dd.ex[bkey];
+    html += '<div class="ex-item '+(isDone?'done':'')+'" style="'+(isDone?'':'border-color:#1a2e3a')+'"><div class="ex-top" onclick="toggleEx(\''+bkey+'\',\'ex\')">';
+    html += '<div class="ex-check '+(isDone?'checked':'')+'" style="'+(isDone?'background:#00D4FF;border-color:#00D4FF;color:#000':'')+'">'+(isDone?'✓':'')+'</div>';
+    html += '<div class="ex-info"><div class="ex-name" style="'+(isDone?'color:var(--text3)':'')+'"><span style="font-size:12px;margin-right:6px">'+(item.type==='bjj'?'🥋':'⏱️')+'</span>'+item.ex.name+'</div><div class="ex-note" style="color:'+(isDone?'var(--text3)':'#00D4FF88')+'">'+item.ex.notes+'</div></div><div class="ex-reps-badge" style="color:#00D4FF">3 × 1 min</div></div></div>';
+  }
+  html += '</div><div class="divider"></div>';
 
-    ${renderWorkoutComboBlock(today, dd, dayIdx)}
-    ${renderWorkoutKegelBlock(today, dd)}
+  // Body Fixes
+  html += '<div class="ex-section" style="margin-top:4px"><div class="section-lbl" style="color:#00ff88">🟢 PHASE 4: BODY FIX & COOL-DOWN</div><div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:0 0 4px">Do these directly after your lifting and striking</div>';
+  for(let i=0; i<safeBodyFix.length; i++){
+    let bf = safeBodyFix[i]; let bfKey = 'bf-'+dayIdx+'-'+i; let isDone = !!dd.bf[bfKey];
+    html += '<div class="ex-item body-item '+(isDone?'done':'')+'" style="'+(isDone?'':'border-color:#1a1a2e')+'"><div class="ex-top" onclick="toggleBF(\''+bfKey+'\')"><div class="ex-check blue-check '+(isDone?'checked':'')+'"></div>';
+    html += '<div class="ex-info"><div class="ex-name">'+bf.n+'</div><div class="ex-note" style="color:#6699ff88">'+bf.detail+'</div></div>';
+    html += '<div class="ex-reps-badge blue">'+(bf.type==='techneck'?'🖥️':bf.type==='sciatica'?'⚡':bf.type==='flexibility'?'🦵':'🦵')+'</div></div></div>';
+  }
+  html += '</div>';
 
-    <div class="info-box cool" style="margin-top:14px;cursor:pointer" onclick="toggleWarmup('${today}','cd-${equip}-${dayIdx}')">
-      <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'#333'};background:${dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
-        ${dd.w['cd-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
-      </div>
-      <span class="box-icon">❄️</span>
-      <div><div class="box-lbl">COOL-DOWN · TAP TO CHECK OFF</div>
-    <div class="box-txt" style="color:${dd.w['cd-'+equip+'-'+dayIdx]?'#444':'#aa88ff'};${dd.w['cd-'+equip+'-'+dayIdx]?'text-decoration:line-through':''}">${day.cooldown}</div></div>
-    </div>
-    ${renderStretchTimers(day.cooldown)}
+  if(typeof renderWorkoutKegelBlock === 'function') html += renderWorkoutKegelBlock(today, dd);
 
-    <div style="margin:14px 20px 0;background:#0d1a12;border-radius:10px;border:1px solid #1a3a1a;overflow:hidden">
-      <div style="padding:12px 16px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:14px;font-family:Impact,'Arial Narrow',sans-serif;letter-spacing:1px;color:#00ff88">POST-WORKOUT</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Within 30 min of finishing · muscle repair window</div>
-        </div>
-        <span style="font-size:20px">💪</span>
-      </div>
-      ${[
-        {k:'pw-shake', icon:'🥤', name:'Protein Shake', detail:'1 scoop · 31g protein + 5g creatine · most important on training days'},
-        {k:'pw-water', icon:'💧', name:'Rehydrate — 500ml+ water', detail:'Replace what you lost · creatine needs water to work'},
-        {k:'pw-cold', icon:'🚿', name:'Cold shower finish', detail:'30 sec cold at the end · recovery + blood flow rebound + testosterone'},
-      ].map(item=>{
-        const done=!!dd.w[item.k+'-'+equip+'-'+dayIdx];
-        return `
-          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1a2e1f;cursor:pointer;${done?'background:#071208;':''}" 
-            onclick="toggleWarmup('${today}','${item.k}-${equip}-${dayIdx}')">
-            <div style="width:20px;height:20px;border-radius:4px;border:2px solid ${done?'#00ff88':'#333'};background:${done?'#00ff88':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              ${done?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':''}
-            </div>
-            <span style="font-size:16px">${item.icon}</span>
-            <div>
-              <div style="font-size:13px;${done?'color:var(--text3);text-decoration:line-through':''}">${item.name}</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px">${item.detail}</div>
-            </div>
-          </div>`;
-      }).join('')}
-      <div style="padding:10px 16px;font-size:11px;color:var(--text3);font-style:italic">
-        💡 On rest days drink your shake in the morning instead
-      </div>
-    </div>
-  `;
+  html += '<div class="info-box cool" style="margin-top:14px;cursor:pointer" onclick="toggleWarmup(\''+today+'\',\'cd-'+equip+'-'+dayIdx+'\')">';
+  html += '<div style="width:20px;height:20px;border-radius:4px;border:2px solid '+(dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'#333')+';background:'+(dd.w['cd-'+equip+'-'+dayIdx]?'#aa88ff':'none')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">'+(dd.w['cd-'+equip+'-'+dayIdx]?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':'')+'</div>';
+  html += '<span class="box-icon">❄️</span><div><div class="box-lbl">COOL-DOWN · TAP TO CHECK OFF</div><div class="box-txt" style="color:'+(dd.w['cd-'+equip+'-'+dayIdx]?'#444':'#aa88ff')+';'+(dd.w['cd-'+equip+'-'+dayIdx]?'text-decoration:line-through':'')+'">'+(day.cooldown||'')+'</div></div></div>';
+  
+  if(typeof renderStretchTimers === 'function') html += renderStretchTimers(day.cooldown);
+
+  // Post Workout
+  html += '<div style="margin:14px 20px 0;background:#0d1a12;border-radius:10px;border:1px solid #1a3a1a;overflow:hidden">';
+  html += '<div style="padding:12px 16px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-family:Impact,\'Arial Narrow\',sans-serif;letter-spacing:1px;color:#00ff88">POST-WORKOUT</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Within 30 min of finishing · muscle repair window</div></div><span style="font-size:20px">💪</span></div>';
+  
+  let pwItems = [
+    {k:'pw-shake', icon:'🥤', name:'Protein Shake', detail:'1 scoop · 31g protein + 5g creatine'},
+    {k:'pw-water', icon:'💧', name:'Rehydrate — 500ml+ water', detail:'Replace what you lost'},
+    {k:'pw-cold', icon:'🚿', name:'Cold shower finish', detail:'30 sec cold at the end'}
+  ];
+  for(let i=0; i<pwItems.length; i++){
+    let item = pwItems[i]; let done = !!dd.w[item.k+'-'+equip+'-'+dayIdx];
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1a2e1f;cursor:pointer;'+(done?'background:#071208;':'')+'" onclick="toggleWarmup(\''+today+'\',\''+item.k+'-'+equip+'-'+dayIdx+'\')">';
+    html += '<div style="width:20px;height:20px;border-radius:4px;border:2px solid '+(done?'#00ff88':'#333')+';background:'+(done?'#00ff88':'none')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(done?'<span style="color:#000;font-size:11px;font-weight:bold">✓</span>':'')+'</div>';
+    html += '<span style="font-size:16px">'+item.icon+'</span><div><div style="font-size:13px;'+(done?'color:var(--text3);text-decoration:line-through':'')+'">'+item.name+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">'+item.detail+'</div></div></div>';
+  }
+  html += '<div style="padding:10px 16px;font-size:11px;color:var(--text3);font-style:italic">💡 On rest days drink your shake in the morning instead</div></div>';
+
+  return html;
+}
+
+function renderSpecialModuleTab(today, dd, type, dayTabsHTML) {
+  const lib = window.EXERCISE_LIBRARY ? window.EXERCISE_LIBRARY[type] : null;
+  if(!lib) return dayTabsHTML + '<div style="padding:20px;color:red;text-align:center;">Library not found for: ' + type + '.</div><button onclick="UI.activeSpecial=null;render()" style="margin:20px;padding:12px;width:calc(100% - 40px);background:var(--card);color:#fff;border:1px solid #333;border-radius:8px">GO BACK</button>';
+  
+  const labels = {
+    conditioning: {n:'FIGHTER CONDITIONING', c:'#ff4444', emoji:'🥊', t:'Cardio & Explosive Power'},
+    bjj: {n:'BJJ SOLO DRILLS', c:'#6699ff', emoji:'🥋', t:'Mat Movements & Hip Mobility'},
+    flexibility: {n:'FLEXIBILITY & SPLITS', c:'#aa88ff', emoji:'🧘‍♂️', t:'Deep Mobility Progression'},
+    mewing: {n:'MEWING REGIMEN', c:'#00D4FF', emoji:'🤫', t:'Jaw & Posture Alignment'},
+  };
+  const config = labels[type] || {n: type.toUpperCase(), c:'#fff', emoji:'⚡', t:''};
+  const exKey = 'spec-'+type;
+  
+  let exDone = 0;
+  for(let i=0; i<lib.length; i++) { if(dd.ex && dd.ex[exKey+'-'+i]) exDone++; }
+  const pct = Math.round(exDone/lib.length*100) || 0;
+
+  let html = dayTabsHTML + '<div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:10px;letter-spacing:2px;color:var(--text3);font-family:Impact,sans-serif">'+config.emoji+' SPECIALIZED MODULE</div><div style="font-size:22px;font-family:Impact,sans-serif;letter-spacing:2px;color:'+config.c+'">'+config.n+'</div><div style="font-size:11px;color:#666;margin-top:2px">'+config.t+'</div></div><button onclick="UI.activeSpecial=null;render()" style="padding:6px 12px;background:none;border:1px solid #333;border-radius:8px;color:var(--text3);font-size:10px;font-family:Impact,sans-serif;letter-spacing:1px;cursor:pointer">CLOSE</button></div>';
+  html += '<div class="prog-bar-wrap"><div class="prog-bar-labels"><span>PROGRESS</span><span style="color:'+config.c+'">'+exDone+'/'+lib.length+'</span></div><div class="prog-bar-track"><div class="prog-bar-fill" style="width:'+pct+'%;background:'+config.c+'"></div></div></div><div class="ex-section">';
+
+  for(let i=0; i<lib.length; i++) {
+    let ex = lib[i];
+    let key = exKey+'-'+i; 
+    let isDone = dd.ex && !!dd.ex[key];
+    html += '<div class="ex-item '+(isDone?'done ':'')+'" style="'+(isDone?'opacity:0.7;border-color:'+config.c+'44;background:rgba(0,0,0,0.4)':'')+'"><div class="ex-top" onclick="toggleEx(\''+key+'\',\'ex\')"><div class="ex-check '+(isDone?'checked ':'')+'" style="'+(isDone?'background:'+config.c+';border-color:'+config.c:'')+'"></div><div class="ex-info"><div class="ex-name" style="'+(isDone?'color:var(--text3)':'')+'">'+ex.name+'</div><div class="ex-note" style="color:var(--text3)">'+ex.notes+'</div></div><div class="ex-reps-badge" style="color:'+config.c+'">'+ex.sets+' × '+ex.reps+'</div></div></div>';
+  }
+
+  if (exDone === lib.length && lib.length > 0) html += '<div style="text-align:center;padding:20px 12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,212,255,0.08));border:1px solid '+config.c+'66;border-radius:12px;margin-top:10px"><div style="font-size:28px;margin-bottom:6px">🔥</div><div style="font-size:20px;font-family:Impact,sans-serif;letter-spacing:3px;color:'+config.c+'">MODULE COMPLETE</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Discipline secured.</div></div>';
+  
+  html += '</div>';
+  return html;
 }
 
 // ═══════════════════════════════════════════════════════════
