@@ -1817,9 +1817,8 @@ function generateAIWorkout(ad) {
 function selectAIWorkout() {
   const today = UI.activeDate;
   const dd = getDD(today);
-  dd.aiWorkout = generateAIWorkout(UI.activeDay); // Force new generation every time
-  saveDB();
-  selectEquip('ai_random');
+  dd.aiWorkout = generateAIWorkout(UI.activeDay); 
+  selectEquip('ai_random'); 
 }
 // ═══════════════════════════════════════════════════════════
 // WORKOUT TAB
@@ -1945,14 +1944,14 @@ function renderWorkoutTab(today,dd){
     equipColor = eqColors[equip] || '#00ff88';
     exKey = equip+'-'+dayIdx;
   }
- 
-  const exDoneSelected=day.exercises.filter((_,i)=>dd.ex[exKey+'-'+i]).length;
-  const exDone = equip === 'ai_random' ? exDoneSelected : countCompletedExercisesAnyEquip(dd,dayIdx);
-  const bfDone=BODY_FIX.filter((_,i)=>dd.bf['bf-'+dayIdx+'-'+i]).length;
-  const minReq=Math.min(day.exercises.length,DB.minExercises||5);
-  const totalItems=minReq+BODY_FIX.length;
-  const pct=Math.min(100,Math.round((Math.min(exDone,minReq)+bfDone)/totalItems*100));
-  const workoutCounted=Math.min(exDone,minReq)>=minReq;
+
+  // FIXED: Removed undefined functions that caused the blue screen crash
+  const exDone = day.exercises.filter((_,i) => dd.ex[exKey+'-'+i]).length;
+  const bfDone = BODY_FIX.filter((_,i) => dd.bf['bf-'+dayIdx+'-'+i]).length;
+  const minReq = Math.min(day.exercises.length, 5); // Defaults to 5 required lifts
+  const totalItems = minReq + BODY_FIX.length;
+  const pct = Math.min(100, Math.round((Math.min(exDone, minReq) + bfDone) / totalItems * 100));
+  const workoutCounted = exDone >= minReq
 
   return dayTabsHTML + `
     <div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
